@@ -10,14 +10,211 @@ local lang = {
     not_found = "~r~Not found.",
     request_refused = "~r~Request refused.",
     wearing_uniform = "~r~Be careful, you are wearing a uniform.",
-    not_allowed = "~r~Not allowed."
+    not_allowed = "~r~Not allowed.",
+    must_wait = "~r~Must wait {1} seconds before being able to perform this action.",
+    menu = {
+      title = "Menu"
+    }
+  },
+  characters = {
+    title = "[Characters]",
+    character = {
+      title = "#{1}: {2} {3}",
+      error = "~r~Invalid character."
+    },
+    create = {
+      title = "Create",
+      error = "~r~Couldn't create a new character."
+    },
+    delete = {
+      title = "Delete",
+      prompt = "Character id to delete ?",
+      error = "~r~Couldn't delete character #{1}."
+    }
+  },
+  admin = {
+    title = "Admin",
+    call_admin = {
+      title = "Call admin",
+      prompt = "Describe your problem: ",
+      notify_taken = "An admin took your ticket.",
+      notify_already_taken = "Ticket already taken.",
+      request = "Admin ticket (user_id = {1}) take/TP to ?: {2}"
+    },
+    tptocoords = {
+      title = "TpToCoords",
+      prompt = "Coords x,y,z: "
+    },
+    tptomarker = {
+      title = "TpToMarker"
+    },
+    noclip = {
+      title = "Noclip"
+    },
+    coords = {
+      title = "Coords",
+      hint = "Copy the coordinates using Ctrl-A Ctrl-C"
+    },
+    custom_upper_emote = {
+      title = "Custom upper emote",
+      prompt = "Animation sequence ('dict anim optional_loops' per line): "
+    },
+    custom_full_emote = {
+      title = "Custom full emote"
+    },
+    custom_emote_task = {
+      title = "Custom emote task",
+      prompt = "Task name: "
+    },
+    custom_sound = {
+      title = "Custom sound",
+      prompt = "Sound 'dict name': "
+    },
+    custom_model = {
+      title = "Custom model",
+      prompt = "Model hash or name: "
+    },
+    custom_audiosource = {
+      title = "Custom AudioSource",
+      prompt = "Audio source: name=url, omit url to delete the named source."
+    },
+    users = {
+      title = "Users",
+      by_id = {
+        title = "> By id",
+        prompt = "User id: "
+      },
+      user = {
+        title = "#{1}: {2}",
+        info = {
+          title = "Info",
+          description = "<em>Endpoint: </em>{1}<br /><em>Source: </em>{2}<br /><em>Last login: </em>{3}<br /><em>Character id: </em>{4}<br /><em>Banned: </em>{5}<br /><em>Whitelisted: </em>{6}<br /><br />(valid to update)"
+        },
+        kick = {
+          title = "Kick",
+          prompt = "Reason: "
+        },
+        ban = {
+          title = "Ban",
+          prompt = "Reason: "
+        },
+        unban = {
+          title = "Unban"
+        },
+        whitelist = {
+          title = "Whitelist user"
+        },
+        unwhitelist = {
+          title = "Un-whitelist user"
+        },
+        tptome = {
+          title = "TpToMe"
+        },
+        tpto = {
+          title = "TpTo"
+        },
+        groups = {
+          title = "Groups",
+          description = "{1}<br /><br />(valid to update)"
+        },
+        group_add = {
+          title = "Add group",
+          prompt = "Group to add: "
+        },
+        group_remove = {
+          title = "Remove group",
+          prompt = "Group to remove: "
+        },
+        give_money = {
+          title = "Give money",
+          prompt = "Amount: "
+        },
+        give_item = {
+          title = "Give item",
+          prompt = "Full id: ",
+          prompt_amount = "Amount: ",
+          notify_failed = "Invalid item or inventory is full."
+        }
+      }
+    }
   },
   weapon = {
+    -- weapon translation by GTA 5 weapon name (lower case)
     pistol = "Pistol"
+  },
+  item = {
+    medkit = {
+      name = "Medical Kit",
+      description = "Used to reanimate unconscious people."
+    },
+    repairkit = {
+      name = "Repair Kit",
+      description = "Used to repair vehicles."
+    },
+    dirty_money = {
+      name = "Dirty money",
+      description = "Illegally earned money."
+    },
+    money = {
+      name = "Money",
+      description = "Packed money.",
+      unpack = {
+        title = "Unpack",
+        prompt = "How much to unpack ? (max {1})"
+      }
+    },
+    money_binder = {
+      name = "Money binder",
+      description = "Used to bind 1000$ of money.",
+      bind = {
+        title = "Bind money"
+      }
+    },
+    wbody = {
+      name = "{1} body",
+      description = "Weapon body of {1}.",
+      equip = {
+        title = "Equip"
+      }
+    },
+    wammo = {
+      name = "{1} ammo",
+      name_box = "{1} ammo x{2}",
+      description = "Weapon ammo for {1}.",
+      load = {
+        title = "Load",
+        prompt = "Amount to load ? (max {1})"
+      },
+      open = {
+        title = "Open"
+      }
+    },
+    bulletproof_vest = {
+      name = "Bulletproof Vest",
+      description = "A handy protection.",
+      wear = {
+        title = "Wear"
+      }
+    }
+  },
+  edible = {
+    liquid = {
+      action = "Drink",
+      notify = "~b~Drinking {1}."
+    },
+    solid = {
+      action = "Eat",
+      notify = "~o~Eating {1}."
+    },
+    drug = {
+      action = "Take",
+      notify = "~g~Taking {1}."
+    }
   },
   survival = {
     starving = "starving",
-    thirsty = "thirsty"
+    thirsty = "thirsty",
+    coma_display = [[You are in a coma, you can give up on life <span class="key">[JUMP]</span> or wait for help (min <span class="countdown" data-duration="{1}"></span>).<br /> <span class="countdown" data-duration="{2}"></span> remaining.]]
   },
   money = {
     display = "{1} <span class=\"symbol\">$</span>",
@@ -29,7 +226,8 @@ local lang = {
       title = "Give money",
       description = "Give money to the nearest player.",
       prompt = "Amount to give:"
-    }
+    },
+    transformer_recipe = "{1} $<br />"
   },
   inventory = {
     title = "Inventory",
@@ -63,7 +261,8 @@ local lang = {
         title = "Put",
         prompt = "Amount to put (max {1}):"
       }
-    }
+    },
+    transformer_recipe = "{2} {1}<br />"
   },
   atm = {
     title = "ATM",
@@ -87,6 +286,10 @@ local lang = {
   },
   business = {
     title = "Chamber of Commerce",
+    identity = {
+      title = "Business",
+      info = "<em>name: </em>{1}<br /><em>capital: </em>{2} $"
+    },
     directory = {
       title = "Directory",
       description = "Business directory.",
@@ -120,18 +323,21 @@ local lang = {
       
     }
   },
-  cityhall = {
-    title = "City Hall",
-    identity = {
-      title = "New identity",
-      description = "Create a new identity, cost = {1} $.",
-      prompt_firstname = "Enter your firstname:",
-      prompt_name = "Enter your name:",
-      prompt_age = "Enter your age:",
+  identity = {
+    title = "Identity",
+    citizenship = {
+      title = "Citizenship",
+      info = "<em>Name: </em>{1}<br /><em>First name: </em>{2}<br /><em>Age: </em>{3}<br /><em>Registration n°: </em>{4}<br /><em>Phone: </em>{5}",
     },
-    menu = {
-      title = "Identity",
-      info = "<em>Name: </em>{1}<br /><em>First name: </em>{2}<br /><em>Age: </em>{3}<br /><em>Registration n°: </em>{4}<br /><em>Phone: </em>{5}<br /><em>Address: </em>{7}, {6}"
+    cityhall = {
+      title = "City Hall",
+      new_identity = {
+        title = "New identity",
+        description = "Create a new identity, cost = {1} $.",
+        prompt_firstname = "Enter your firstname:",
+        prompt_name = "Enter your name:",
+        prompt_age = "Enter your age:",
+      }
     }
   },
   police = {
@@ -168,14 +374,15 @@ local lang = {
         tracked = "Tracked {1} ({2})"
       },
       records = {
-        show = {
-          title = "Show records",
-          description = "Show police records by registration number."
+        title = "Records",
+        description = "Manage police records by registration number.",
+        add = {
+          title = "Add",
+          prompt = "New record:"
         },
         delete = {
-          title = "Clear records",
-          description = "Clear police records by registration number.",
-          deleted = "~b~Police records deleted"
+          title = "Delete",
+          prompt = "Record id to delete ?"
         }
       }
     },
@@ -205,23 +412,17 @@ local lang = {
       },
       check = {
         title = "Check player",
-        description = "Check money, inventory and weapons of the nearest player.",
-        request_hide = "Hide the check report.",
-        info = "<em>money: </em>{1} $<br /><br /><em>inventory: </em>{2}<br /><br /><em>weapons: </em>{3}",
-        checked = "You have being checked."
+        description = "Check wallet, inventory and weapons of the nearest player.",
+        checked = "~b~You have been checked.",
+        info = {
+          title = "Info",
+          description = "<em>Wallet: </em>{1} $"
+        }
       },
       seize = {
-        seized = "Seized {2} ~r~{1}",
-        weapons = {
-          title = "Seize weapons",
-          description = "Seize nearest player weapons",
-          seized = "~b~Your weapons have been seized."
-        },
-        items = {
-          title = "Seize illegals",
-          description = "Seize illegal items",
-          seized = "~b~Your illegal stuff has been seized."
-        }
+        seized = "~b~Your weapons and illegal items have been seized.",
+        title = "Seize weapons/illegals",
+        description = "Seize nearest player weapons and illegal items."
       },
       jail = {
         title = "Jail",
@@ -243,9 +444,6 @@ local lang = {
         title = "Store weapons",
         description = "Store your weapons in your inventory."
       }
-    },
-    identity = {
-      info = "<em>Name: </em>{1}<br /><em>First name: </em>{2}<br /><em>Age: </em>{3}<br /><em>Registration n°: </em>{4}<br /><em>Phone: </em>{5}<br /><em>Business: </em>{6}<br /><em>Business capital: </em>{7} $<br /><em>Address: </em>{9}, {8}"
     }
   },
   emergency = {
@@ -326,6 +524,10 @@ local lang = {
     }
   },
   home = {
+    address = {
+      title = "Address",
+      info = "{1}, {2}"
+    },
     buy = {
       title = "Buy",
       description = "Buy a home here, price is {1} $.",
@@ -386,7 +588,11 @@ local lang = {
     title = "Garage ({1})",
     owned = {
       title = "Owned",
-      description = "Owned vehicles."
+      description = "Owned vehicles.",
+      already_out = "This vehicle is already out.",
+      force_out = {
+        request = "This vehicle is already out, do you want to pay a {1} $ fee to fetch it ?"
+      }
     },
     buy = {
       title = "Buy",
@@ -405,7 +611,8 @@ local lang = {
       title = "Store",
       description = "Put your current vehicle in the garage.",
       too_far = "The vehicle is too far away.",
-      wrong_garage = "The vehicle can't be stored in this garage."
+      wrong_garage = "The vehicle can't be stored in this garage.",
+      stored = "Vehicle stored."
     }
   },
   vehicle = {
@@ -429,7 +636,9 @@ local lang = {
     },
     lock = {
       title = "Lock/unlock",
-      description = "Lock or unlock the vehicle."
+      description = "Lock or unlock the vehicle.",
+      locked = "Vehicle locked.",
+      unlocked = "Vehicle unlocked."
     },
     engine = {
       title = "Engine on/off",
@@ -449,18 +658,24 @@ local lang = {
       description = "Repair the nearest vehicle."
     }
   },
-  gunshop = {
-    title = "Gunshop ({1})",
-    prompt_ammo = "Amount of ammo to buy for the {1}:",
-    info = "<em>body: </em> {1} $<br /><em>ammo: </em> {2} $/u<br /><br />{3}"
-  },
-  market = {
-    title = "Market ({1})",
+  shop = {
+    title = "Shop ({1})",
     prompt = "Amount of {1} to buy:",
     info = "{1} $<br /><br />{2}"
   },
   skinshop = {
-    title = "Skinshop"
+    title = "Skinshop",
+    info = {
+      title = "Info",
+      description = "Select a skin part below.<br /><br /><em>Current price: </em>{1} $"
+    },
+    model = "Model",
+    texture = "Texture",
+    palette = "Palette",
+    color_primary = "Primary color",
+    color_secondary = "Secondary color",
+    opacity = "Opacity",
+    select_description = "{1}/{2} (left/right to select)"
   },
   cloakroom = {
     title = "Cloakroom ({1})",
@@ -468,8 +683,11 @@ local lang = {
       title = "> Undress"
     }
   },
-  itemtr = {
-    not_enough_reagents = "~r~Not enough reagents.",
+  transformer = {
+    recipe_description = [[{1}<br /><br />{2}<div style="color: rgb(0,255,125)">=></div>{3}]],
+    empty_bar = "empty"
+  },
+  hidden_transformer = {
     informer = {
       title = "Illegal Informer",
       description = "{1} $",
@@ -477,7 +695,7 @@ local lang = {
     }
   },
   mission = {
-    blip = "Mission ({1}) {2}/{3}",
+    title = "Mission ({1}) {2}/{3}",
     display = "<span class=\"name\">{1}</span> <span class=\"step\">{2}/{3}</span><br /><br />{4}",
     cancel = {
       title = "Cancel mission"
@@ -491,12 +709,14 @@ local lang = {
     level_down = "Aptitude ~b~{1}/{2} ~r~lose level ({3}).",
     level_up = "Aptitude ~b~{1}/{2} ~g~level up ({3}).",
     display = {
-      group = "{1}: ",
+      group = "{1}",
       aptitude = "{1} LVL {3} EXP {2}"
-    }
+    },
+    transformer_recipe = "[EXP] {3} {1}/{2}<br />"
   },
   radio = {
-    title = "Radio ON/OFF"
+    title = "Radio ON/OFF",
+    description = "Allow to speak with [TEAM TEXT CHAT] and broadcast a GPS signal when ON."
   }
 }
 

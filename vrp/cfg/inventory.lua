@@ -3,27 +3,23 @@ local cfg = {}
 
 cfg.inventory_weight_per_strength = 10 -- weight for an user inventory per strength level (no unit, but thinking in "kg" is a good norm)
 
--- default chest weight for vehicle trunks
-cfg.default_vehicle_chest_weight = 50
+cfg.lose_inventory_on_death = true
 
--- define vehicle chest weight by model in lower case
-cfg.vehicle_chest_weights = {
-  ["monster"] = 250
-}
-
--- list of static chest types (map of name => {.title,.blipid,.blipcolor,.weight, .permissions (optional)})
+-- list of static chest types (map of name => {.title,.map_entity,.weight, .permissions (optional)})
+-- map_entity: {ent,cfg} will fill cfg.pos, cfg.title
+-- static chests are local to the server
 cfg.static_chest_types = {
-  ["chest"] = { -- example of a static chest
-    title = "Test chest",
-    blipid = 205,
-    blipcolor = 5,
-    weight = 100
+  ["police_seized"] = {
+    title = "Seized chest",
+    map_entity = {"PoI", {blip_id = 374, blip_color = 38, marker_id = 1}},
+    weight = 500,
+    permissions = {"police.chest_seized"}
   }
 }
 
 -- list of static chest points
 cfg.static_chests = {
-  {"chest", 1855.13940429688,3688.68579101563,34.2670478820801}
+  {"police_seized", 452.44293212891,-980.17449951172,30.689586639404}
 }
 
 return cfg

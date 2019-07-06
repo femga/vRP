@@ -1,9 +1,20 @@
-local registration_number = "000AAA"
+if not vRP.modules.identity then return end
 
-function tvRP.setRegistrationNumber(registration)
-  registration_number = registration
+local Identity = class("Identity", vRP.Extension)
+
+-- METHODS
+
+function Identity:__construct()
+  vRP.Extension.__construct(self)
+
+  self.registration = "000AAA"
 end
 
-function tvRP.getRegistrationNumber()
-  return registration_number
+-- TUNNEL
+Identity.tunnel = {}
+
+function Identity.tunnel:setRegistrationNumber(registration)
+  self.registration = registration
 end
+
+vRP:registerExtension(Identity)

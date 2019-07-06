@@ -1,11 +1,12 @@
 -- this file define global tools required by vRP and vRP extensions
--- it will create module, SERVER, CLIENT, async...
+-- it will create module, SERVER, CLIENT, async, class...
 
 -- side detection
 SERVER = not IsVehicleEngineStarting
 CLIENT = not SERVER
 
-function table.maxn(t)
+-- table.maxn replacement
+function table_maxn(t)
   local max = 0
   for k,v in pairs(t) do
     local n = tonumber(k)
@@ -16,6 +17,7 @@ function table.maxn(t)
 end
 
 local modules = {}
+
 -- load a lua resource file as module
 -- rsc: resource name
 -- path: lua file path without extension
@@ -51,25 +53,24 @@ function module(rsc, path)
   end
 end
 
+-- Luaoop class
+
+local Luaoop = module("vrp", "lib/Luaoop")
+class = Luaoop.class
+
 -- Luaseq like for FiveM
 
-local Debug = module("vrp", "lib/Debug")
-
 local function wait(self)
-  if Debug.active then -- debug
-    SetTimeout(math.floor(Debug.async_time)*1000, function()
-      if not self.r then
-        Debug.log("WARNING: in resource \""..GetCurrentResourceName().."\" async return take more than "..Debug.async_time.."s "..self.traceback, true)
-      end
-    end)
-  end
-
   local rets = Citizen.Await(self.p)
   if not rets then
-    rets = self.r 
+    if self.r then
+      rets = self.r
+    else
+      error("async wait(): Citizen.Await returned (nil) before the areturn call.")
+    end
   end
 
-  return table.unpack(rets, 1, table.maxn(rets))
+  return table.unpack(rets, 1, table_maxn(rets))
 end
 
 local function areturn(self, ...)
@@ -77,16 +78,37 @@ local function areturn(self, ...)
   self.p:resolve(self.r)
 end
 
--- create an async returner
+-- create an async returner or a thread (Citizen.CreateThreadNow)
+-- func: if passed, will create a thread, otherwise will return an async returner
 function async(func)
   if func then
     Citizen.CreateThreadNow(func)
   else
-    if Debug.active then -- debug
-      return setmetatable({ wait = wait, p = promise.new(), traceback = debug.traceback("",2) }, { __call = areturn })
-    else
-      return setmetatable({ wait = wait, p = promise.new() }, { __call = areturn })
+    return setmetatable({ wait = wait, p = promise.new() }, { __call = areturn })
+  end
+end
+
+local function hex_conv(c)
+  return string.format('%02X', string.byte(c))
+end
+
+-- convert Lua string to hexadecimal
+function tohex(str)
+  return string.gsub(str, '.', hex_conv)
+end
+
+
+-- basic deep clone function (doesn't handle circular references)
+function clone(t)
+  if type(t) == "table" then
+    local new = {}
+    for k,v in pairs(t) do
+      new[k] = clone(v)
     end
+
+    return new
+  else
+    return t
   end
 end
 
@@ -112,7 +134,7 @@ function parseFloat(v)
 end
 
 -- will remove chars not allowed/disabled by strchars
--- if allow_policy is true, will allow all strchars, if false, will allow everything except the strchars
+-- allow_policy: if true, will allow all strchars, if false, will allow everything except the strchars
 local sanitize_tmp = {}
 function sanitizeString(str, strchars, allow_policy)
   local r = ""
@@ -155,19 +177,3 @@ function splitString(str, sep)
 
   return t
 end
-
-function joinStrings(list, sep)
-  if sep == nil then sep = "" end
-
-  local str = ""
-  local count = 0
-  local size = #list
-  for k,v in pairs(list) do
-    count = count+1
-    str = str..v
-    if count < size then str = str..sep end
-  end
-
-  return str
-end
-

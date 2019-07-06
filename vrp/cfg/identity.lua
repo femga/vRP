@@ -2,10 +2,10 @@
 local cfg = {}
 
 -- city hall position
-cfg.city_hall = {1854.21, 3685.51, 34.2671}
+cfg.city_hall = {-546.12933349609,-205.25981140137,38.215141296387}
 
--- cityhall blip {blipid,blipcolor}
-cfg.blip = {181,4}
+-- {ent,cfg} will fill cfg.title, cfg.pos
+cfg.city_hall_map_entity = {"PoI", {blip_id = 181, blip_color = 4, marker_id = 1, color = {0,255,125,125}}}
 
 -- cost of a new identity
 cfg.new_identity_cost = 100

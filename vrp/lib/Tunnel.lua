@@ -1,6 +1,5 @@
 
-local Tools = module("lib/Tools")
-local Debug = module("lib/Debug")
+local IDManager = module("lib/IDManager")
 
 -- API used in function of the side
 local TriggerRemoteEvent = nil
@@ -20,7 +19,9 @@ local Tunnel = {}
 -- define per dest regulator
 Tunnel.delays = {}
 
--- set the base delay between Triggers for this destination in milliseconds (0 for instant trigger)
+-- set the base delay between Triggers for a destination
+-- dest: player source
+-- delay: milliseconds (0 for instant trigger)
 function Tunnel.setDestDelay(dest, delay)
   Tunnel.delays[dest] = {delay, 0}
 end
@@ -48,7 +49,7 @@ local function tunnel_resolve(itable,key)
     local dest = nil
     if SERVER then
       dest = args[1]
-      args = {table.unpack(args, 2, table.maxn(args))}
+      args = {table.unpack(args, 2, table_maxn(args))}
       if dest >= 0 and not no_wait then -- return values not supported for multiple dests (-1)
         r = async()
       end
@@ -77,10 +78,6 @@ local function tunnel_resolve(itable,key)
         if r then
           rid = ids:gen()
           callbacks[rid] = r
-
-          if Debug.active then -- debug
-            profile = Debug.pbegin("tunnel_"..iname..":"..identifier.."("..rid.."):"..fname)
-          end
         end
 
         if SERVER then
@@ -95,10 +92,6 @@ local function tunnel_resolve(itable,key)
       if r then
         rid = ids:gen()
         callbacks[rid] = r
-
-        if Debug.active then -- debug
-          profile = Debug.pbegin("tunnel_"..iname..":"..identifier.."("..rid.."):"..fname)
-        end
       end
 
       if SERVER then
@@ -109,13 +102,7 @@ local function tunnel_resolve(itable,key)
     end
 
     if r then
-      if profile then -- debug
-        local rets = {r:wait()}
-        Debug.pend(profile)
-        return table.unpack(rets, 1, table.maxn(rets))
-      else
-        return r:wait()
-      end
+      return r:wait()
     end
   end
 
@@ -132,15 +119,11 @@ function Tunnel.bindInterface(name,interface)
   AddEventHandler(name..":tunnel_req",function(member,args,identifier,rid)
     local source = source
 
-    if Debug.active then
-      Debug.log("tunnelreq#"..rid.."_"..name..":"..member.." "..json.encode(Debug.safeTableCopy(args)))
-    end
-
     local f = interface[member]
 
     local rets = {}
     if type(f) == "function" then -- call bound function
-      rets = {f(table.unpack(args, 1, table.maxn(args)))}
+      rets = {f(table.unpack(args, 1, table_maxn(args)))}
       -- CancelEvent() -- cancel event doesn't seem to cancel the event for the other handlers, but if it does, uncomment this
     end
 
@@ -157,11 +140,11 @@ end
 
 -- get a tunnel interface to send requests 
 -- name: interface name
--- identifier: unique string to identify this tunnel interface access (if nil, will be the name of the resource)
+-- identifier: (optional) unique string to identify this tunnel interface access; if nil, will be the name of the resource
 function Tunnel.getInterface(name,identifier)
   if not identifier then identifier = GetCurrentResourceName() end
   
-  local ids = Tools.newIDGenerator()
+  local ids = IDManager()
   local callbacks = {}
 
   -- build interface
@@ -170,10 +153,6 @@ function Tunnel.getInterface(name,identifier)
   -- receive response
   RegisterLocalEvent(name..":"..identifier..":tunnel_res")
   AddEventHandler(name..":"..identifier..":tunnel_res",function(rid,args)
---    if Debug.active then
---      Debug.log("tunnelres#"..rid.."_"..name.." "..json.encode(Debug.safeTableCopy(args)))
---    end
-
     local callback = callbacks[rid]
     if callback then
       -- free request id
@@ -181,7 +160,7 @@ function Tunnel.getInterface(name,identifier)
       callbacks[rid] = nil
 
       -- call
-      callback(table.unpack(args, 1, table.maxn(args)))
+      callback(table.unpack(args, 1, table_maxn(args)))
     end
   end)
 

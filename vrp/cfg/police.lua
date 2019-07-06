@@ -1,9 +1,14 @@
 
 local cfg = {}
 
+-- {ent,cfg} will fill cfg.pos, cfg.title
+cfg.pc_map_entity = {"PoI", {marker_id = 1}}
+
 -- PCs positions
 cfg.pcs = {
-  {1853.21, 3689.51, 34.2671}
+  {437.14007568359,-996.31872558594,30.689586639404},
+  {441.97839355469,-978.94622802734,30.689605712891},
+  {459.74328613281,-988.95098876953,24.914869308472}
 }
 
 -- vehicle tracking configuration
@@ -14,9 +19,9 @@ cfg.trackveh = {
 }
 
 -- wanted display
+-- map_entity: {ent,cfg} will fill cfg.player (server id), cfg.title
 cfg.wanted = {
-  blipid = 458,
-  blipcolor = 38,
+  map_entity = {"PlayerMark", {blip_id = 458, blip_color = 38}},
   service = "police"
 }
 

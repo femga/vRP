@@ -1,89 +1,94 @@
+if not vRP.modules.gui then return end
 
--- pause
-AddEventHandler("vRP:pauseChange", function(paused)
-  SendNUIMessage({act="pause_change", paused=paused})
-end)
+local GUI = class("GUI", vRP.Extension)
+
+function GUI:__construct()
+  vRP.Extension.__construct(self)
+
+  self.paused = false
+
+  -- task: gui controls (from cellphone)
+  Citizen.CreateThread(function()
+    while true do
+      Citizen.Wait(0)
+      -- menu controls
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.up)) then SendNUIMessage({act="event",event="UP"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.down)) then SendNUIMessage({act="event",event="DOWN"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.left)) then SendNUIMessage({act="event",event="LEFT"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.right)) then SendNUIMessage({act="event",event="RIGHT"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.select)) then SendNUIMessage({act="event",event="SELECT"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.cancel)) then 
+        self.remote._closeMenu()
+        SendNUIMessage({act="event",event="CANCEL"}) 
+      end
+
+      -- open general menu
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.phone.open)) and not self.menu_data then
+        local ok = true
+
+        -- coma check
+        if vRP.EXT.Survival and vRP.cfg.coma_disable_menu and vRP.EXT.Survival:isInComa() then
+          ok = false
+        end
+
+        -- handcuff check
+        if ok and vRP.EXT.Police and vRP.cfg.handcuff_disable_menu and vRP.EXT.Police:isHandcuffed() then 
+          ok = false
+        end
+
+        if ok then
+          self.remote._openMainMenu() 
+        end
+      end
+
+      -- F5,F6 (default: control michael, control franklin)
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.request.yes)) then SendNUIMessage({act="event",event="F5"}) end
+      if IsControlJustPressed(table.unpack(vRP.cfg.controls.request.no)) then SendNUIMessage({act="event",event="F6"}) end
+
+      -- pause events
+      local pause_menu = IsPauseMenuActive()
+      if pause_menu and not self.paused then
+        self.paused = true
+        vRP:triggerEvent("pauseChange", self.paused)
+      elseif not pause_menu and self.paused then
+        self.paused = false
+        vRP:triggerEvent("pauseChange", self.paused)
+      end
+    end
+  end)
+end
+
+-- CONTROLS/GUI
+
+function GUI:isPaused()
+  return self.paused
+end
 
 -- MENU
 
-local menu_state = {}
-
-function tvRP.openMenuData(menudata)
-  SendNUIMessage({act="open_menu", menudata = menudata})
+function GUI:isMenuOpen()
+  return self.menu_data ~= nil
 end
 
-function tvRP.closeMenu()
-  SendNUIMessage({act="close_menu"})
+-- hide/show GUI
+function GUI:setVisible(flag)
+  SendNUIMessage({act="set_visible", flag=flag})
 end
-
--- return menu state
---- opened: boolean
-function tvRP.getMenuState()
-  return menu_state
-end
-
--- PROMPT
-
-function tvRP.prompt(title,default_text)
-  SendNUIMessage({act="prompt",title=title,text=tostring(default_text)})
-  SetNuiFocus(true)
-end
-
--- REQUEST
-
-function tvRP.request(id,text,time)
-  SendNUIMessage({act="request",id=id,text=tostring(text),time = time})
-  tvRP.playSound("HUD_MINI_GAME_SOUNDSET","5_SEC_WARNING")
-end
-
--- gui menu events
-RegisterNUICallback("menu",function(data,cb)
-  if data.act == "close" then
-    vRPserver._closeMenu(data.id)
-  elseif data.act == "valid" then
-    vRPserver._validMenuChoice(data.id,data.choice,data.mod)
-  end
-end)
-
-RegisterNUICallback("menu_state",function(data,cb)
-  menu_state = data
-end)
-
--- gui prompt event
-RegisterNUICallback("prompt",function(data,cb)
-  if data.act == "close" then
-    SetNuiFocus(false)
-    SetNuiFocus(false)
-    vRPserver._promptResult(data.result)
-  end
-end)
-
--- gui request event
-RegisterNUICallback("request",function(data,cb)
-  if data.act == "response" then
-    vRPserver._requestResult(data.id,data.ok)
-  end
-end)
 
 -- ANNOUNCE
 
 -- add an announce to the queue
 -- background: image url (800x150)
 -- content: announce html content
-function tvRP.announce(background,content)
+function GUI:announce(background,content)
   SendNUIMessage({act="announce",background=background,content=content})
 end
-
--- init
-RegisterNUICallback("init",function(data,cb) -- NUI initialized
-  SendNUIMessage({act="cfg",cfg=cfg.gui}) -- send cfg
-  TriggerEvent("vRP:NUIready")
-end)
 
 -- PROGRESS BAR
 
 -- create/update a progress bar
-function tvRP.setProgressBar(name,anchor,text,r,g,b,value)
+-- value: 0-1
+function GUI:setProgressBar(name,anchor,text,r,g,b,value)
   local pbar = {name=name,anchor=anchor,text=text,r=r,g=g,b=b,value=value}
 
   -- default values
@@ -92,18 +97,18 @@ function tvRP.setProgressBar(name,anchor,text,r,g,b,value)
   SendNUIMessage({act="set_pbar",pbar = pbar})
 end
 
--- set progress bar value in percent
-function tvRP.setProgressBarValue(name,value)
+-- set progress bar value 0-1
+function GUI:setProgressBarValue(name,value)
   SendNUIMessage({act="set_pbar_val", name = name, value = value})
 end
 
 -- set progress bar text
-function tvRP.setProgressBarText(name,text)
+function GUI:setProgressBarText(name,text)
   SendNUIMessage({act="set_pbar_text", name = name, text = text})
 end
 
 -- remove a progress bar
-function tvRP.removeProgressBar(name)
+function GUI:removeProgressBar(name)
   SendNUIMessage({act="remove_pbar", name = name})
 end
 
@@ -112,350 +117,150 @@ end
 -- set a div
 -- css: plain global css, the div class is "div_name"
 -- content: html content of the div
-function tvRP.setDiv(name,css,content)
+function GUI:setDiv(name,css,content)
   SendNUIMessage({act="set_div", name = name, css = css, content = content})
 end
 
 -- set the div css
-function tvRP.setDivCss(name,css)
+function GUI:setDivCss(name,css)
   SendNUIMessage({act="set_div_css", name = name, css = css})
 end
 
 -- set the div content
-function tvRP.setDivContent(name,content)
+function GUI:setDivContent(name,content)
   SendNUIMessage({act="set_div_content", name = name, content = content})
 end
 
 -- execute js for the div
--- js variables: this is the div
-function tvRP.divExecuteJS(name,js)
+-- js: code, "this" is the div
+function GUI:divExecuteJS(name,js)
   SendNUIMessage({act="div_execjs", name = name, js = js})
 end
 
 -- remove the div
-function tvRP.removeDiv(name)
+function GUI:removeDiv(name)
   SendNUIMessage({act="remove_div", name = name})
 end
 
--- AUDIO
+-- EVENT
 
--- play audio source (once)
---- url: valid audio HTML url (ex: .ogg/.wav/direct ogg-stream url)
---- volume: 0-1 
---- x,y,z: position (omit for unspatialized)
---- max_dist  (omit for unspatialized)
-function tvRP.playAudioSource(url, volume, x, y, z, max_dist)
-  SendNUIMessage({act="play_audio_source", url = url, x = x, y = y, z = z, volume = volume, max_dist = max_dist})
+GUI.event = {}
+
+-- pause
+function GUI.event:pauseChange(paused)
+  self:setVisible(not paused)
 end
 
--- set named audio source (looping)
---- name: source name
---- url: valid audio HTML url (ex: .ogg/.wav/direct ogg-stream url)
---- volume: 0-1 
---- x,y,z: position (omit for unspatialized)
---- max_dist  (omit for unspatialized)
-function tvRP.setAudioSource(name, url, volume, x, y, z, max_dist)
-  SendNUIMessage({act="set_audio_source", name = name, url = url, x = x, y = y, z = z, volume = volume, max_dist = max_dist})
+-- TUNNEL
+
+GUI.tunnel = {}
+
+-- MENU
+
+function GUI.tunnel:openMenu(menudata)
+  self.menu_data = menudata
+
+  if vRP.cfg.default_menu then
+    SendNUIMessage({act="open_menu", menudata = menudata})
+  end
+
+  vRP:triggerEvent("menuOpen", menudata)
 end
 
--- remove named audio source
-function tvRP.removeAudioSource(name)
-  SendNUIMessage({act="remove_audio_source", name = name})
+function GUI.tunnel:closeMenu()
+  self.menu_data = nil
+
+  if vRP.cfg.default_menu then
+    SendNUIMessage({act="close_menu"})
+  end
+
+  vRP:triggerEvent("menuClose")
 end
 
-local listener_wait = math.ceil(1/cfg.audio_listener_rate*1000)
+function GUI.tunnel:setMenuSelectEvent(select_event)
+  if self.menu_data then
+    self.menu_data.select_event = select_event
 
-Citizen.CreateThread(function()
-  while true do
-    Citizen.Wait(listener_wait)
-
-
-    local x,y,z
-    if cfg.audio_listener_on_player then
-      local ped = GetPlayerPed(PlayerId())
-      x,y,z = table.unpack(GetPedBoneCoords(ped, 31086, 0,0,0)) -- head pos
-    else
-      x,y,z = table.unpack(GetGameplayCamCoord())
+    if vRP.cfg.default_menu then
+      SendNUIMessage({act="set_menu_select_event", select_event = select_event})
     end
 
-    local fx,fy,fz = tvRP.getCamDirection()
-    SendNUIMessage({act="audio_listener", x = x, y = y, z = z, fx = fx, fy = fy, fz = fz})
+    vRP:triggerEvent("menuSetSelectEvent", select_event)
+  end
+end
+
+function GUI.tunnel:updateMenuOption(index, title, description)
+  if self.menu_data then
+    local option = self.menu_data.options[index]
+    if option then
+      if title then option[1] = title end
+      if description then option[2] = description end
+    end
+
+    if vRP.cfg.default_menu then
+      SendNUIMessage({act="update_menu_option", index = index-1, title = title, description = description})
+    end
+
+    vRP:triggerEvent("menuOptionUpdate", index, title, description)
+  end
+end
+
+-- PROMPT
+
+function GUI.tunnel:prompt(title,default_text)
+  SendNUIMessage({act="prompt",title=title,text=tostring(default_text)})
+  SetNuiFocus(true)
+end
+
+-- REQUEST
+
+function GUI.tunnel:request(id,text,time)
+  SendNUIMessage({act="request",id=id,text=tostring(text),time = time})
+  vRP.EXT.Base:playSound("HUD_MINI_GAME_SOUNDSET","5_SEC_WARNING")
+end
+
+GUI.tunnel.announce = GUI.announce
+GUI.tunnel.setProgressBar = GUI.setProgressBar
+GUI.tunnel.setProgressBarValue = GUI.setProgressBarValue
+GUI.tunnel.setProgressBarText = GUI.setProgressBarText
+GUI.tunnel.removeProgressBar = GUI.removeProgressBar
+GUI.tunnel.setDiv = GUI.setDiv
+GUI.tunnel.setDivCss = GUI.setDivCss
+GUI.tunnel.setDivContent = GUI.setDivContent
+GUI.tunnel.divExecuteJS = GUI.divExecuteJS
+GUI.tunnel.removeDiv = GUI.removeDiv
+
+-- NUI
+
+-- gui menu events
+RegisterNUICallback("menu",function(data,cb)
+  if data.act == "valid" then
+    vRP.EXT.GUI.remote._triggerMenuOption(data.option+1,data.mod)
+  elseif data.act == "select" then
+    vRP.EXT.GUI.remote._triggerMenuSelect(data.option+1)
   end
 end)
 
--- VoIP
-
-local channel_callbacks = {}
-local voice_channels = {}
-
-function tvRP.setPeerConfiguration(config)
-  SendNUIMessage({act="set_peer_configuration", config=config})
-end
-
--- request connection to another player for a specific channel
-function tvRP.connectVoice(channel, player)
-  -- register channel/player
-  local _channel = voice_channels[channel]
-  if not _channel then
-    _channel = {}
-    voice_channels[channel] = _channel
-  end
-
-  if _channel[player] == nil then -- check if not already connecting/connected
-    SendNUIMessage({act="connect_voice", channel=channel, player=player})
-  end
-end
-
--- disconnect from another player for a specific channel
--- player: nil to disconnect from all players
-function tvRP.disconnectVoice(channel, player)
-  SendNUIMessage({act="disconnect_voice", channel=channel, player=player})
-end
-
--- register callbacks for a specific channel
---- on_offer(player): should return true to accept the connection
---- on_connect(player, is_origin): is_origin is true if it's the local peer (not an answer)
---- on_disconnect(player)
-function tvRP.registerVoiceCallbacks(channel, on_offer, on_connect, on_disconnect)
-  if not channel_callbacks[channel] then
-    channel_callbacks[channel] = {on_offer, on_connect, on_disconnect}
-  else
-    print("[vRP] VoIP channel callbacks for <"..channel.."> already registered.")
-  end
-end
-
--- check if there is an active connection
-function tvRP.isVoiceConnected(channel, player)
-  local channel = voice_channels[channel]
-  if channel then
-    return channel[player] == 1
-  end
-end
-
--- check if there is a pending connection
-function tvRP.isVoiceConnecting(channel, player)
-  local channel = voice_channels[channel]
-  if channel then
-    return channel[player] == 0
-  end
-end
-
--- return connections (map of channel => map of player => state (0-1))
-function tvRP.getVoiceChannels()
-  return voice_channels
-end
-
--- enable/disable speaking
---- player: nil to affect all channel peers
---- active: true/false 
-function tvRP.setVoiceState(channel, player, active)
-  SendNUIMessage({act="set_voice_state", channel=channel, player=player, active=active})
-end
-
--- configure channel (can only be called once per channel)
---- config:
----- effects: map of name => true/options
------ spatialization => { max_dist: ..., rolloff: ..., dist_model: ... } (per peer effect)
------ biquad => { frequency: ..., Q: ..., type: ..., detune: ..., gain: ...} see WebAudioAPI BiquadFilter
------- freq = 1700, Q = 3, type = "bandpass" (idea for radio effect)
------ gain => { gain: ... }
-function tvRP.configureVoice(channel, config)
-  SendNUIMessage({act="configure_voice", channel=channel, config=config})
-end
-
-RegisterNUICallback("audio",function(data,cb)
-  if data.act == "voice_connected" then
-    -- register channel/player
-    local channel = voice_channels[data.channel]
-    if not channel then
-      channel = {}
-      voice_channels[data.channel] = channel
-    end
-    channel[data.player] = 1 -- connected
-
-    -- callback
-    local cbs = channel_callbacks[data.channel]
-    if cbs then
-      local cb = cbs[2]
-      if cb then cb(data.player, data.origin) end
-    end
-  elseif data.act == "voice_disconnected" then
-    -- unregister channel/player
-    local channel = voice_channels[data.channel]
-    if channel then
-      channel[data.player] = nil
-    end
-
-    -- callback
-    local cbs = channel_callbacks[data.channel]
-    if cbs then
-      local cb = cbs[3]
-      if cb then cb(data.player) end
-    end
-  elseif data.act == "voice_peer_signal" then
-    vRPserver._signalVoicePeer(data.player, data.data)
+-- gui prompt event
+RegisterNUICallback("prompt",function(data,cb)
+  if data.act == "close" then
+    SetNuiFocus(false)
+    SetNuiFocus(false)
+    vRP.EXT.GUI.remote._promptResult(data.result)
   end
 end)
 
--- receive voice peer signal
-function tvRP.signalVoicePeer(player, data)
-  if data.sdp_offer then -- check offer
-    -- register channel/player
-    local channel = voice_channels[data.channel]
-    if not channel then
-      channel = {}
-      voice_channels[data.channel] = channel
-    end
-
-    if channel[player] == nil then -- check if not already connecting
-      local cbs = channel_callbacks[data.channel]
-      if cbs then
-        local cb = cbs[1]
-        if cb and cb(player) then
-          channel[player] = 0 -- wait connection
-          SendNUIMessage({act="voice_peer_signal", player=player, data=data})
-        end
-      end
-    end
-  else -- other signal
-    SendNUIMessage({act="voice_peer_signal", player=player, data=data})
-  end
-end
-
-local speaking = false
-function tvRP.isSpeaking()
-  return speaking
-end
-
-if cfg.vrp_voip then -- setup voip world channel
-  -- world channel behavior
-  tvRP.registerVoiceCallbacks("world", function(player)
-    print("(vRPvoice-world) requested by "..player)
-
-    -- check connection distance
-
-    local pid = PlayerId()
-    local px,py,pz = tvRP.getPosition()
-
-    local cplayer = GetPlayerFromServerId(player)
-
-    if NetworkIsPlayerConnected(cplayer) then
-      local oped = GetPlayerPed(cplayer)
-      local x,y,z = table.unpack(GetEntityCoords(oped,true))
-
-      local distance = GetDistanceBetweenCoords(x,y,z,px,py,pz,true)
-      return (distance <= cfg.voip_proximity*1.5) -- valid connection
-    end
-  end,
-  function(player, is_origin)
-    print("(vRPvoice-world) connected to "..player)
-    tvRP.setVoiceState("world", nil, speaking)
-  end,
-  function(player)
-    print("(vRPvoice-world) disconnected from "..player)
-  end)
-
-  AddEventHandler("vRP:NUIready", function()
-    -- world channel config
-    tvRP.configureVoice("world", cfg.world_voice_config)
-  end)
-end
-
-
-
--- detect players near, give positions to AudioEngine
-Citizen.CreateThread(function()
-  local n = 0
-  local ns = math.ceil(cfg.voip_interval/listener_wait) -- connect/disconnect every x milliseconds
-
-  while true do
-    Citizen.Wait(listener_wait)
-
-    n = n+1
-    local voip_check = (n >= ns)
-    if voip_check then n = 0 end
-
-    local pid = PlayerId()
-    local spid = GetPlayerServerId(pid)
-    local px,py,pz = tvRP.getPosition()
-
-    local positions = {}
-
-    local players = tvRP.getPlayers()
-    for k,v in pairs(players) do
-      local player = GetPlayerFromServerId(k)
-
-      if player ~= pid and NetworkIsPlayerConnected(player) then
-        local oped = GetPlayerPed(player)
-        local x,y,z = table.unpack(GetPedBoneCoords(oped, 31086, 0,0,0)) -- head pos
-        positions[k] = {x,y,z} -- add position
-
-        if cfg.vrp_voip and voip_check then -- vRP voip detection/connection
-          local distance = GetDistanceBetweenCoords(x,y,z,px,py,pz,true)
-          local in_radius = (distance <= cfg.voip_proximity)
-          local linked = tvRP.isVoiceConnected("world", k)
-          local initiator = (spid < k)
-          if in_radius and not linked and initiator then -- join radius
-            tvRP.connectVoice("world", k)
-          elseif not in_radius and linked then -- leave radius
-            tvRP.disconnectVoice("world", k)
-          end
-        end
-      end
-    end
-
-    positions._ = true -- prevent JS array type
-    SendNUIMessage({act="set_player_positions", positions=positions})
+-- gui request event
+RegisterNUICallback("request",function(data,cb)
+  if data.act == "response" then
+    vRP.EXT.GUI.remote._requestResult(data.id,data.ok)
   end
 end)
 
--- CONTROLS/GUI
-
-local paused = false
-
-function tvRP.isPaused()
-  return paused
-end
-
--- gui controls (from cellphone)
-Citizen.CreateThread(function()
-  while true do
-    Citizen.Wait(0)
-    -- menu controls
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.up)) then SendNUIMessage({act="event",event="UP"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.down)) then SendNUIMessage({act="event",event="DOWN"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.left)) then SendNUIMessage({act="event",event="LEFT"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.right)) then SendNUIMessage({act="event",event="RIGHT"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.select)) then SendNUIMessage({act="event",event="SELECT"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.cancel)) then SendNUIMessage({act="event",event="CANCEL"}) end
-
-    -- open general menu
-    if IsControlJustPressed(table.unpack(cfg.controls.phone.open)) and (not tvRP.isInComa() or not cfg.coma_disable_menu) and (not tvRP.isHandcuffed() or not cfg.handcuff_disable_menu) and not menu_state.opened then vRPserver._openMainMenu() end
-
-    -- F5,F6 (default: control michael, control franklin)
-    if IsControlJustPressed(table.unpack(cfg.controls.request.yes)) then SendNUIMessage({act="event",event="F5"}) end
-    if IsControlJustPressed(table.unpack(cfg.controls.request.no)) then SendNUIMessage({act="event",event="F6"}) end
-
-    -- pause events
-    local pause_menu = IsPauseMenuActive()
-    if pause_menu and not paused then
-      paused = true
-      TriggerEvent("vRP:pauseChange", paused)
-    elseif not pause_menu and paused then
-      paused = false
-      TriggerEvent("vRP:pauseChange", paused)
-    end
-
-    -- voip/speaking
-    local old_speaking = speaking
-    speaking = IsControlPressed(1,249)
-
-    -- voip
-    if cfg.vrp_voip then
-      if old_speaking ~= speaking then
-        tvRP.setVoiceState("world", nil, speaking)
-      end
-    end
-  end
+-- init
+RegisterNUICallback("init",function(data,cb) -- NUI initialized
+  SendNUIMessage({act="cfg",cfg=vRP.cfg.gui}) -- send cfg
+  vRP:triggerEvent("NUIready")
 end)
 
+vRP:registerExtension(GUI)

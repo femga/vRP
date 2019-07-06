@@ -9,14 +9,212 @@ local lang = {
     not_found = "~r~Non trouvé.",
     request_refused = "~r~Requête refusée.",
     wearing_uniform = "~r~Attention, vous portez un uniforme.",
-    not_allowed = "~r~Non autorisé."
+    not_allowed = "~r~Non autorisé.",
+    must_wait = "~r~Vous devez attendre {1} secondes avant de pouvoir effectuer cette action.",
+    menu = {
+      title = "Menu"
+    }
+  },
+  characters = {
+    title = "[Personnages]",
+    character = {
+      title = "#{1}: {2} {3}",
+      error = "~r~Personnage invalide."
+    },
+    create = {
+      title = "Créer",
+      error = "~r~Impossible de créer un nouveau personnage."
+    },
+    delete = {
+      title = "Supprimer",
+      prompt = "Id du personnage à supprimer ?",
+      error = "~r~Impossible de supprimer le personnage #{1}."
+    }
+  },
+  admin = {
+    title = "Admin",
+    call_admin = {
+      title = "Appeler un admin",
+      prompt = "Décrivez votre problème: ",
+      notify_taken = "Un admin a pris votre ticket.",
+      notify_already_taken = "Ticket déjà pris.",
+      request = "Ticket admin (user_id = {1}) prendre/TP ?: {2}"
+    },
+    tptocoords = {
+      title = "TpToCoords",
+      prompt = "Coords x,y,z: "
+    },
+    tptomarker = {
+      title = "TpToMarker"
+    },
+    noclip = {
+      title = "Noclip"
+    },
+    coords = {
+      title = "Coords",
+      hint = "Copie des coordonnées avec Ctrl-A Ctrl-C"
+    },
+    custom_upper_emote = {
+      title = "Custom upper emote",
+      prompt = "Animation sequence ('dict anim optional_loops' per line): "
+    },
+    custom_full_emote = {
+      title = "Custom full emote"
+    },
+    custom_emote_task = {
+      title = "Custom emote task",
+      prompt = "Task name: "
+    },
+    custom_sound = {
+      title = "Custom sound",
+      prompt = "Sound 'dict name': "
+    },
+    custom_model = {
+      title = "Custom model",
+      prompt = "Model hash or name: "
+    },
+    custom_audiosource = {
+      title = "Custom AudioSource",
+      prompt = "Audio source: name=url, omit url to delete the named source."
+    },
+    users = {
+      title = "Users",
+      by_id = {
+        title = "> Par id",
+        prompt = "User id: "
+      },
+      user = {
+        title = "#{1}: {2}",
+        info = {
+          title = "Info",
+          description = "<em>Endpoint: </em>{1}<br /><em>Source: </em>{2}<br /><em>Dernière connexion: </em>{3}<br /><em>Id personnage: </em>{4}<br /><em>Bannis: </em>{5}<br /><em>Whitelisté: </em>{6}<br /><br />(valider pour mettre à jour)"
+        },
+        kick = {
+          title = "Kick",
+          prompt = "Raison: "
+        },
+        ban = {
+          title = "Ban",
+          prompt = "Raison: "
+        },
+        unban = {
+          title = "Unban"
+        },
+        whitelist = {
+          title = "Whitelist user"
+        },
+        unwhitelist = {
+          title = "Un-whitelist user"
+        },
+        tptome = {
+          title = "TpToMe"
+        },
+        tpto = {
+          title = "TpTo"
+        },
+        groups = {
+          title = "Groupes",
+          description = "{1}<br /><br />(valider pour mettre à jour)"
+        },
+        group_add = {
+          title = "Ajouter groupe",
+          prompt = "Groupe à ajouter: "
+        },
+        group_remove = {
+          title = "Retirer groupe",
+          prompt = "Groupe à retiré: "
+        },
+        give_money = {
+          title = "Donner de l'argent",
+          prompt = "Quantité: "
+        },
+        give_item = {
+          title = "Donner des objets",
+          prompt = "Full id: ",
+          prompt_amount = "Quantité: ",
+          notify_failed = "Objet invalide ou inventaire plein."
+        }
+      }
+    }
   },
   weapon = {
+    -- weapon translation by GTA 5 weapon name (lower case)
     pistol = "Pistolet"
   },
+  item = {
+    medkit = {
+      name = "Trousse de secours",
+      description = "Utilisé pour réanimer des personnes inconscientes."
+    },
+    repairkit = {
+      name = "Kit de réparation",
+      description = "Utilisé pour réparer des véhicules."
+    },
+    dirty_money = {
+      name = "Argent sale",
+      description = "Argent obtenu illégalement."
+    },
+    money = {
+      name = "Argent",
+      description = "Paquet d'argent.",
+      unpack = {
+        title = "Défaire",
+        prompt = "Montant à défaire ? (max {1})"
+      }
+    },
+    money_binder = {
+      name = "Paqueteur de billets",
+      description = "Utilisé pour créer des paquets de 1000.",
+      bind = {
+        title = "Faire un paquet"
+      }
+    },
+    wbody = {
+      name = "Corps de {1}",
+      description = "Corps d'arme de {1}.",
+      equip = {
+        title = "Equiper"
+      }
+    },
+    wammo = {
+      name = "Munitions de {1}",
+      name_box = "Munitions de {1} x{2}",
+      description = "Munitions d'arme pour {1}.",
+      load = {
+        title = "Charger",
+        prompt = "Montant à charger ? (max {1})"
+      },
+      open = {
+        title = "Ouvrir"
+      }
+    },
+    bulletproof_vest = {
+      name = "Gilet pare-balles",
+      description = "Une protection utile.",
+      wear = {
+        title = "Mettre"
+      }
+    }
+  },
+  edible = {
+    liquid = {
+      action = "Boire",
+      notify = "~b~Boit {1}."
+    },
+    solid = {
+      action = "Manger",
+      notify = "~o~Mange {1}."
+    },
+    drug = {
+      action = "Prendre",
+      notify = "~g~Prend {1}."
+    }
+  },
+
   survival = {
     starving = "Affamé",
-    thirsty = "Assoiffé"
+    thirsty = "Assoiffé",
+    coma_display = [[Vous êtes dans le coma, vous pouvez abandonner et mourir <span class="key">[SAUTER]</span> ou attendre de l'aide (min <span class="countdown" data-duration="{1}"></span>).<br /> <span class="countdown" data-duration="{2}"></span> restante(s).]]
   },
   money = {
     display = "{1} <span class=\"symbol\">$</span>",
@@ -28,7 +226,8 @@ local lang = {
       title = "Donner de l'argent",
       description = "Donner de l'argent au joueur le plus proche.",
       prompt = "Montant à donner:"
-    }
+    },
+    transformer_recipe = "{1} $<br />"
   },
   inventory = {
     title = "Inventaire",
@@ -62,7 +261,8 @@ local lang = {
         title = "Mettre",
         prompt = "Quantité à mettre (max {1}):"
       }
-    }
+    },
+    transformer_recipe = "{2} {1}<br />"
   },
   atm = {
     title = "Distributeur de billets",
@@ -86,6 +286,10 @@ local lang = {
   },
   business = {
     title = "Chambre de commerce",
+    identity = {
+      title = "Entreprise",
+      info = "<em>Nom: </em>{1}<br /><em>Capital: </em>{2} $"
+    },
     directory = {
       title = "Annuaire",
       description = "Annuaire des entreprises",
@@ -119,18 +323,21 @@ local lang = {
       
     }
   },
-  cityhall = {
-    title = "Hôtel de ville",
-    identity = {
-      title = "Nouvelle identité",
-      description = "Creez une nouvelle identité, frais de création = {1} $.",
-      prompt_firstname = "Entrez votre prénom:",
-      prompt_name = "Entrez votre nom de famille:",
-      prompt_age = "Entrez votre âge:"
+  identity = {
+    title = "Identité",
+    citizenship = {
+      title = "Citoyenneté",
+      info = "<em>Nom: </em>{1}<br /><em>Prénom: </em>{2}<br /><em>Age: </em>{3}<br /><em>N° d'immatriculation: </em>{4}<br /><em>Téléphone: </em>{5}",
     },
-    menu = {
-      title = "Identité",
-      info = "<em>Nom: </em>{1}<br /><em>Prénom: </em>{2}<br /><em>Age: </em>{3}<br /><em>N° d'immatriculation: </em>{4}<br /><em>Téléphone: </em>{5}<br /><em>Adresse: </em>{7}, {6}"
+    cityhall = {
+      title = "Hôtel de ville",
+      new_identity = {
+        title = "Nouvelle identité",
+        description = "Creez une nouvelle identité, frais de création = {1} $.",
+        prompt_firstname = "Entrez votre prénom:",
+        prompt_name = "Entrez votre nom de famille:",
+        prompt_age = "Entrez votre âge:"
+      },
     }
   },
   police = {
@@ -167,14 +374,15 @@ local lang = {
         tracked = "{1} ({2}) localisé."
       },
       records = {
-        show = {
-          title = "Afficher casier",
-          description = "Afficher casier judiciaire par immatriculation."
+        title = "Casier judiciaire",
+        description = "Gérer casier judiciaire par immatriculation.",
+        add = {
+          title = "Ajouter",
+          prompt = "Nouvel enregistrement:"
         },
         delete = {
-          title = "Effacer casier",
-          description = "Effacer casier judiciaire par immatriculation",
-          deleted = "~b~Casier judiciaire effacé."
+          title = "Supprimer",
+          prompt = "Id d'enregistrement à supprimer ?"
         }
       }
     },
@@ -204,23 +412,17 @@ local lang = {
       },
       check = {
         title = "Fouiller le joueur",
-        description = "Fouiller l'argent, les objets et les armes du joueur le plus proche.",
-        request_hide = "Fermer le rapport de fouille.",
-        info = "<em>Argent: </em>{1} $<br /><br /><em>Inventaire: </em>{2}<br /><br /><em>Armes: </em>{3}",
-        checked = "Vous avez été fouillé."
+        description = "Fouiller le portefeuille, les objets et les armes du joueur le plus proche.",
+        checked = "~b~Vous avez été fouillé.",
+        info = {
+          title = "Info",
+          description = "<em>Portefeuille: </em>{1} $"
+        }
       },
       seize = {
-        seized = "Saisis {2} ~r~{1}",
-        weapons = {
-          title = "Saisir armes",
-          description = "Saisir les armes du joueur à proximité.",
-          seized = "~b~Vos armes ont été saisies."
-        },
-        items = {
-          title = "Saisir illégaux",
-          description = "Saisir les objets illégaux.",
-          seized = "~b~Vos objets illégaux ont été saisis."
-        }
+        seized = "~b~Vos armes et objets illégaux ont été saisis.",
+        title = "Saisir armes/illégaux",
+        description = "Saisir les armes et objets illégaux du joueur à proximité."
       },
       jail = {
         title = "Prison",
@@ -242,9 +444,6 @@ local lang = {
         title = "Ranger ses armes",
         description = "Ranger ses armes dans son inventaire."
       }
-    },
-    identity = {
-      info = "<em>Nom: </em>{1}<br /><em>Prénom: </em>{2}<br /><em>Age: </em>{3}<br /><em>N° d'immatriculation: </em>{4}<br /><em>Téléphone: </em>{5}<br /><em>Entreprise: </em>{6}<br /><em>Capital de l'entreprise: </em>{7} $<br /><em>Adresse: </em>{9}, {8}"
     }
   },
   emergency = {
@@ -325,6 +524,10 @@ local lang = {
     }
   },
   home = {
+    address = {
+      title = "Adresse",
+      info = "{1}, {2}"
+    },
     buy = {
       title = "Acheter",
       description = "Acheter un logement ici, le prix est {1} $.",
@@ -385,7 +588,11 @@ local lang = {
     title = "Garage ({1})",
     owned = {
       title = "Mes véhicules",
-      description = "Véhicules m'appartenant"
+      description = "Véhicules m'appartenant",
+      already_out = "Véhicule déjà sorti.",
+      force_out = {
+        request = "Véhicule déjà sorti, voulez vous payer {1} $ de frais pour le récupérer ?"
+      }
     },
     buy = {
       title = "Acheter",
@@ -404,7 +611,8 @@ local lang = {
       title = "Rentrer au garage",
       description = "Rentrez votre véhicule au garage.",
       too_far = "Le véhicule est trop loin.",
-      wrong_garage = "Le véhicule ne peut pas être rangé dans ce garage."
+      wrong_garage = "Le véhicule ne peut pas être rangé dans ce garage.",
+      stored = "Véhicule rentré."
     }
   },
   vehicle = {
@@ -428,7 +636,9 @@ local lang = {
     },
     lock = {
       title = "Fermer/ouvrir",
-      description = "Fermer ou ouvrir le véhicule."
+      description = "Fermer ou ouvrir le véhicule.",
+      locked = "Véhicule vérrouillé.",
+      unlocked = "Véhicule dévérrouillé."
     },
     engine = {
       title = "Moteur on/off",
@@ -448,18 +658,24 @@ local lang = {
       description = "Réparer le véhicule le plus proche."
     }
   },
-  gunshop = {
-    title = "Magasin d'armes ({1})",
-    prompt_ammo = "Quantité de munition à acheter pour {1}:",
-    info = "<em>Arme: </em> {1} $<br /><em>Munition: </em> {2} $/u<br /><br />{3}"
-  },
-  market = {
-    title = "Supérette ({1})",
+  shop = {
+    title = "Magasin ({1})",
     prompt = "Quantité de {1} à acheter:",
     info = "{1} $<br /><br />{2}"
   },
   skinshop = {
-    title = "Magasin de vêtements"
+    title = "Magasin d'apparence",
+    info = {
+      title = "Info",
+      description = "Selectionner une partie de l'apparence ci-dessous.<br /><br /><em>Prix actuel: </em>{1} $"
+    },
+    model = "Modèle",
+    texture = "Texture",
+    palette = "Palette",
+    color_primary = "Couleur première",
+    color_secondary = "Couleur secondaire",
+    opacity = "Opacité",
+    select_description = "{1}/{2} (gauche/droite pour selectionner)"
   },
   cloakroom = {
     title = "Vestiaire ({1})",
@@ -467,8 +683,11 @@ local lang = {
       title = "> Enlever"
     }
   },
-  itemtr = {
-    not_enough_reagents = "~r~Pas assez d'éléments.",
+  transformer = {
+    recipe_description = [[{1}<br /><br />{2}<div style="color: rgb(0,255,125)">=></div>{3}]],
+    empty_bar = "vide"
+  },
+  hidden_transformer = {
     informer = {
       title = "Informateur illégal",
       description = "{1} $",
@@ -476,7 +695,7 @@ local lang = {
     }
   },
   mission = {
-    blip = "Mission ({1}) {2}/{3}",
+    title = "Mission ({1}) {2}/{3}",
     display = "<span class=\"name\">{1}</span> <span class=\"step\">{2}/{3}</span><br /><br />{4}",
     cancel = {
       title = "Abandonner la mission"
@@ -490,12 +709,14 @@ local lang = {
     level_down = "Compétence ~b~{1}/{2} ~r~descend en niveau ({3}).",
     level_up = "Compétence ~b~{1}/{2} ~g~monte en niveau ({3}).",
     display = {
-      group = "{1}: ",
+      group = "{1}",
       aptitude = "{1} NIV {3} EXP {2}"
-    }
+    },
+    transformer_recipe = "[EXP] {3} {1}/{2}<br />"
   },
   radio = {
-    title = "Radio ON/OFF"
+    title = "Radio ON/OFF",
+    description = "Permet de parler avec [CHAT TEXTUEL EQUIPE] et diffuse un signal GPS quand elle est allumée."
   }
 }
 

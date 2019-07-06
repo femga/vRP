@@ -1,218 +1,204 @@
-local cfg = module("cfg/survival")
+if not vRP.modules.survival then return end
+
 local lang = vRP.lang
 
--- api
+local Survival = class("Survival", vRP.Extension)
 
-function vRP.getHunger(user_id)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    return data.hunger
-  end
+-- SUBCLASS
 
-  return 0
+Survival.User = class("User")
+
+-- return vital value (0-1) or nil
+function Survival.User:getVital(name)
+  return self.cdata.vitals[name]
 end
 
-function vRP.getThirst(user_id)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    return data.thirst
-  end
+-- set vital
+-- value: 0-1
+function Survival.User:setVital(name, value)
+  if vRP.EXT.Survival.vitals[name] then -- exists
+    local overflow
 
-  return 0
-end
-
-function vRP.setHunger(user_id,value)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    data.hunger = value
-    if data.hunger < 0 then data.hunger = 0
-    elseif data.hunger > 100 then data.hunger = 100 
+    -- clamp
+    if value < 0 then
+      overflow = value
+      value = 0 
+    elseif value > 1 then 
+      overflow = value-1
+      value = 1
     end
 
-    -- update bar
-    local source = vRP.getUserSource(user_id)
-    vRPclient._setProgressBarValue(source, "vRP:hunger",data.hunger)
-    if data.hunger >= 100 then
-      vRPclient._setProgressBarText(source,"vRP:hunger",lang.survival.starving())
-    else
-      vRPclient._setProgressBarText(source,"vRP:hunger","")
-    end
-  end
-end
+    -- set
+    local pvalue = self.cdata.vitals[name]
+    self.cdata.vitals[name] = value
 
-function vRP.setThirst(user_id,value)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    data.thirst = value
-    if data.thirst < 0 then data.thirst = 0
-    elseif data.thirst > 100 then data.thirst = 100 
+    if pvalue ~= value then
+      vRP:triggerEvent("playerVitalChange", self, name)
     end
 
-    -- update bar
-    local source = vRP.getUserSource(user_id)
-    vRPclient._setProgressBarValue(source, "vRP:thirst",data.thirst)
-    if data.thirst >= 100 then
-      vRPclient._setProgressBarText(source,"vRP:thirst",lang.survival.thirsty())
-    else
-      vRPclient._setProgressBarText(source,"vRP:thirst","")
+    if overflow then
+      vRP:triggerEvent("playerVitalOverflow", self, name, overflow)
     end
   end
 end
 
-function vRP.varyHunger(user_id, variation)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    local was_starving = data.hunger >= 100
-    data.hunger = data.hunger + variation
-    local is_starving = data.hunger >= 100
-
-    -- apply overflow as damage
-    local overflow = data.hunger-100
-    if overflow > 0 then
-      vRPclient._varyHealth(vRP.getUserSource(user_id),-overflow*cfg.overflow_damage_factor)
-    end
-
-    if data.hunger < 0 then data.hunger = 0
-    elseif data.hunger > 100 then data.hunger = 100 
-    end
-
-    -- set progress bar data
-    local source = vRP.getUserSource(user_id)
-    vRPclient._setProgressBarValue(source,"vRP:hunger",data.hunger)
-    if was_starving and not is_starving then
-      vRPclient._setProgressBarText(source,"vRP:hunger","")
-    elseif not was_starving and is_starving then
-      vRPclient._setProgressBarText(source,"vRP:hunger",lang.survival.starving())
-    end
-  end
+function Survival.User:varyVital(name, value)
+  self:setVital(name, self:getVital(name)+value)
 end
 
-function vRP.varyThirst(user_id, variation)
-  local data = vRP.getUserDataTable(user_id)
-  if data then
-    local was_thirsty = data.thirst >= 100
-    data.thirst = data.thirst + variation
-    local is_thirsty = data.thirst >= 100
+-- METHODS
 
-    -- apply overflow as damage
-    local overflow = data.thirst-100
-    if overflow > 0 then
-      vRPclient._varyHealth(vRP.getUserSource(user_id),-overflow*cfg.overflow_damage_factor)
-    end
+function Survival:__construct()
+  vRP.Extension.__construct(self)
 
-    if data.thirst < 0 then data.thirst = 0
-    elseif data.thirst > 100 then data.thirst = 100 
-    end
+  self.cfg = module("cfg/survival")
+  self.vitals = {} -- registered vitals, map of name => {default_value}
 
-    -- set progress bar data
-    local source = vRP.getUserSource(user_id)
-    vRPclient._setProgressBarValue(source,"vRP:thirst",data.thirst)
-    if was_thirsty and not is_thirsty then
-      vRPclient._setProgressBarText(source,"vRP:thirst","")
-    elseif not was_thirsty and is_thirsty then
-      vRPclient._setProgressBarText(source,"vRP:thirst",lang.survival.thirsty())
-    end
-  end
-end
+  self:registerVital("water", 1)
+  self:registerVital("food", 0.75)
 
--- tunnel api (expose some functions to clients)
+  -- items
+  vRP.EXT.Inventory:defineItem("medkit", lang.item.medkit.name(), lang.item.medkit.description(), nil, 0.5)
 
-function tvRP.varyHunger(variation)
-  local user_id = vRP.getUserId(source)
-  if user_id then
-    vRP.varyHunger(user_id,variation)
-  end
-end
+  -- water/food task increase
+  local function task_update()
+    SetTimeout(60000, task_update)
 
-function tvRP.varyThirst(variation)
-  local user_id = vRP.getUserId(source)
-  if user_id then
-    vRP.varyThirst(user_id,variation)
-  end
-end
-
--- tasks
-
--- hunger/thirst increase
-function task_update()
-  for k,v in pairs(vRP.users) do
-    vRP.varyHunger(v,cfg.hunger_per_minute)
-    vRP.varyThirst(v,cfg.thirst_per_minute)
-  end
-
-  SetTimeout(60000,task_update)
-end
-
-async(function()
-  task_update()
-end)
-
--- handlers
-
--- init values
-AddEventHandler("vRP:playerJoin",function(user_id,source,name,last_login)
-  local data = vRP.getUserDataTable(user_id)
-  if data.hunger == nil then
-    data.hunger = 0
-    data.thirst = 0
-  end
-end)
-
--- add survival progress bars on spawn
-AddEventHandler("vRP:playerSpawn",function(user_id, source, first_spawn)
-  local data = vRP.getUserDataTable(user_id)
-
-  -- disable police
-  vRPclient._setPolice(source,cfg.police)
-  -- set friendly fire
-  vRPclient._setFriendlyFire(source,cfg.pvp)
-
-  vRPclient._setProgressBar(source,"vRP:hunger","minimap",htxt,255,153,0,0)
-  vRPclient._setProgressBar(source,"vRP:thirst","minimap",ttxt,0,125,255,0)
-  vRP.setHunger(user_id, data.hunger)
-  vRP.setThirst(user_id, data.thirst)
-end)
-
--- EMERGENCY
-
----- revive
-local revive_seq = {
-  {"amb@medic@standing@kneel@enter","enter",1},
-  {"amb@medic@standing@kneel@idle_a","idle_a",1},
-  {"amb@medic@standing@kneel@exit","exit",1}
-}
-
-local choice_revive = {function(player,choice)
-  local user_id = vRP.getUserId(player)
-  if user_id then
-    local nplayer = vRPclient.getNearestPlayer(player,10)
-      local nuser_id = vRP.getUserId(nplayer)
-      if nuser_id then
-        if vRPclient.isInComa(nplayer) then
-            if vRP.tryGetInventoryItem(user_id,"medkit",1,true) then
-              vRPclient._playAnim(player,false,revive_seq,false) -- anim
-              SetTimeout(15000, function()
-                vRPclient._varyHealth(nplayer,50) -- heal 50
-              end)
-            end
-          else
-            vRPclient._notify(player,lang.emergency.menu.revive.not_in_coma())
-          end
-      else
-        vRPclient._notify(player,lang.common.no_player_near())
+    for id,user in pairs(vRP.users) do
+      if user:isReady() then
+        user:varyVital("water", -self.cfg.water_per_minute)
+        user:varyVital("food", -self.cfg.food_per_minute)
       end
+    end
   end
-end,lang.emergency.menu.revive.description()}
 
--- add choices to the main menu (emergency)
-vRP.registerMenuBuilder("main", function(add, data)
-  local user_id = vRP.getUserId(data.player)
-  if user_id then
-    local choices = {}
-    if vRP.hasPermission(user_id,"emergency.revive") then
-      choices[lang.emergency.menu.revive.title()] = choice_revive
+  task_update()
+
+  -- menu
+  -- EMERGENCY
+
+  local revive_seq = {
+    {"amb@medic@standing@kneel@enter","enter",1},
+    {"amb@medic@standing@kneel@idle_a","idle_a",1},
+    {"amb@medic@standing@kneel@exit","exit",1}
+  }
+
+  local function m_revive(menu)
+    local user = menu.user
+
+    local nuser
+    local nplayer = vRP.EXT.Base.remote.getNearestPlayer(user.source,10)
+    if nplayer then nuser = vRP.users_by_source[nplayer] end
+    if nuser then
+      if self.remote.isInComa(nuser.source) then
+        if user:tryTakeItem("medkit",1) then
+          vRP.EXT.Base.remote._playAnim(user.source,false,revive_seq,false) -- anim
+          SetTimeout(15000, function()
+            self.remote._varyHealth(nuser.source,50) -- heal 50
+          end)
+        end
+      else
+        vRP.EXT.Base.remote._notify(user.source,lang.emergency.menu.revive.not_in_coma())
+      end
+    else
+      vRP.EXT.Base.remote._notify(user.source,lang.common.no_player_near())
+    end
+  end
+
+  -- add choices to the main menu (emergency)
+  vRP.EXT.GUI:registerMenuBuilder("main", function(menu)
+    if menu.user:hasPermission("emergency.revive") then
+      menu:addOption(lang.emergency.menu.revive.title(), m_revive, lang.emergency.menu.revive.description())
+    end
+  end)
+end
+
+-- default_value: (optional) default vital value, 0 by default
+function Survival:registerVital(name, default_value)
+  self.vitals[name] = {default_value or 0}
+end
+
+-- EVENT
+
+Survival.event = {}
+
+function Survival.event:characterLoad(user)
+  -- init vitals
+  if not user.cdata.vitals then
+    user.cdata.vitals = {}
+  end
+
+  for name,vital in pairs(self.vitals) do
+    if not user.cdata.vitals[name] then
+      user.cdata.vitals[name] = vital[1]
+    end
+  end
+end
+
+function Survival.event:playerSpawn(user, first_spawn)
+  if first_spawn then
+    self.remote._setPolice(user.source, self.cfg.police)
+    self.remote._setFriendlyFire(user.source, self.cfg.pvp)
+    self.remote._setConfig(user.source, lang.survival.coma_display())
+
+    if self.cfg.vital_display then
+      local GUI = vRP.EXT.GUI
+
+      local water = user:getVital("water")
+      local food = user:getVital("food")
+
+      GUI.remote._setProgressBar(user.source,"vRP:Survival:food","minimap",(food == 0) and lang.survival.starving() or "",255,153,0,food)
+      GUI.remote._setProgressBar(user.source,"vRP:Survival:water","minimap",(water == 0) and lang.survival.thirsty() or "",0,125,255,water)
+    end
+  end
+end
+
+function Survival.event:playerDeath(user)
+  -- reset vitals
+  for name,vital in pairs(self.vitals) do
+    user:setVital(name, vital[1])
+  end
+end
+
+function Survival.event:playerVitalChange(user, vital)
+  if self.cfg.vital_display then
+    local GUI = vRP.EXT.GUI
+
+    if vital == "water" then
+      local value = user:getVital(vital)
+      GUI.remote._setProgressBarValue(user.source, "vRP:Survival:water", value)
+      GUI.remote._setProgressBarText(user.source, "vRP:Survival:water", (value == 0) and lang.survival.thirsty() or "")
+    elseif vital == "food" then
+      local value = user:getVital(vital)
+      GUI.remote._setProgressBarValue(user.source, "vRP:Survival:food", value)
+      GUI.remote._setProgressBarText(user.source, "vRP:Survival:food", (value == 0) and lang.survival.starving() or "")
+    end
+  end
+end
+
+function Survival.event:playerVitalOverflow(user, vital, overflow)
+  if vital == "water" or vital == "food" then
+    if overflow < 0 then
+      self.remote._varyHealth(user.source, overflow*100*self.cfg.overflow_damage_factor)
+    end
+  end
+end
+
+-- TUNNEL
+Survival.tunnel = {}
+
+function Survival.tunnel:consume(water, food)
+  local user = vRP.users_by_source[source]
+
+  if user and user:isReady() then
+    if water then
+      user:varyVital("water", -water)
     end
 
-    add(choices)
+    if food then
+      user:varyVital("food", -food)
+    end
   end
-end)
+end
+
+vRP:registerExtension(Survival)

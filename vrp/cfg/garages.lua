@@ -3,15 +3,32 @@ local cfg = {}
 -- define garage types with their associated vehicles
 -- (vehicle list: https://wiki.fivem.net/wiki/Vehicles)
 
--- each garage type is a map of veh_name => {title, price, description}
--- _config: blipid, blipcolor, permissions (optional, only users with the permissions will have access to the shop)
-
 cfg.rent_factor = 0.1 -- 10% of the original price if a rent
 cfg.sell_factor = 0.75 -- sell for 75% of the original price
 
+cfg.force_out_fee = 1000 -- amount of money (fee) to force re-spawn an already out vehicle
+
+-- default chest weight for vehicle trunks
+cfg.default_vehicle_chest_weight = 50
+
+cfg.vehicle_update_interval = 15 -- seconds
+cfg.vehicle_check_interval = 15 -- seconds, re-own/respawn task
+cfg.vehicle_respawn_radius = 150 -- radius for the out vehicle respawn feature
+
+-- define vehicle chest weight by model in lower case
+cfg.vehicle_chest_weights = {
+  ["benson"] = 120,
+  ["trailersmall"] = 100,
+  ["trailers"] = 500,
+  ["tanker"] = 5000
+}
+
+-- each garage type is a map of veh_name => {title, price, description}
+-- _config: map_entity, permissions (optional, only users with the permissions will have access to the shop)
+--- map_entity: {ent,cfg} will fill cfg.title, cfg.pos
 cfg.garage_types = {
   ["compacts"]  = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["blista"] = {"Blista", 15000, ""},
     ["brioso"] = {"Brioso R/A", 155000, ""},
     ["dilettante"] = {"Dilettante", 25000, ""},
@@ -22,7 +39,7 @@ cfg.garage_types = {
   },
 
   ["coupe"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["cogcabrio"] = {"Cognoscenti Cabrio",180000, ""},
     ["exemplar"] = {"Exemplar", 200000, ""},
     ["F620"] = {"F620", 80000, ""},
@@ -40,7 +57,7 @@ cfg.garage_types = {
   },
 
   ["sports"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["ninef"] = {"9F",120000, ""},
     ["ninef2"] = {"9F Cabrio",130000, ""},
     ["alpha"] = {"Alpha",150000, ""},
@@ -74,7 +91,7 @@ cfg.garage_types = {
   },
 
   ["sportsclassics"] = {
-    _config = {blipid=50,blipcolor=5},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 5, marker_id = 1}}},
     ["casco"] = {"Casco",680000, ""},
     ["coquette2"] = {"Coquette Classic",665000, ""},
     ["jb700"] = {"JB 700",350000, ""},
@@ -86,7 +103,7 @@ cfg.garage_types = {
   },
 
   ["supercars"] = {
-    _config = {blipid=50,blipcolor=5},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 5, marker_id = 1}}},
     ["adder"] = {"Adder",1000000, ""},
     ["banshee2"] = {"Banshee 900R",565000, ""},
     ["bullet"] = {"Bullet",155000, ""},
@@ -109,7 +126,7 @@ cfg.garage_types = {
   },
 
   ["musclecars"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["blade"] = {"Blade",160000, ""},
     ["buccaneer"] = {"Buccaneer",29000, ""},
     ["Chino"] = {"Chino",225000, ""},
@@ -128,7 +145,7 @@ cfg.garage_types = {
   },
 
   ["off-road"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["bifta"] = {"Bifta",75000, ""},
     ["blazer"] = {"Blazer",8000, ""},
     ["brawler"] = {"Brawler",715000, ""},
@@ -141,7 +158,7 @@ cfg.garage_types = {
   },
 
   ["suvs"]  = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["baller"] = {"Baller",90000, ""},
     ["cavalcade"] = {"Cavalcade",60000, ""},
     ["granger"] = {"Grabger",35000, ""},
@@ -154,7 +171,7 @@ cfg.garage_types = {
   },
 
   ["vans"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["bison"] = {"Bison",30000, ""},
     ["bobcatxl"] = {"Bobcat XL",23000, ""},
     ["gburrito"] = {"Gang Burrito",65000, ""},
@@ -167,7 +184,7 @@ cfg.garage_types = {
   },
 
   ["sedans"] = {
-    _config = {blipid=50,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["asea"] = {"Asea",1000000, ""},
     ["asterope"] = {"Asterope",1000000, ""},
     ["cognoscenti"] = {"Cognoscenti",1000000, ""},
@@ -194,7 +211,7 @@ cfg.garage_types = {
   },
 
   ["motorcycles"] = {
-    _config = {blipid=226,blipcolor=4},
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 4, marker_id = 1}}},
     ["AKUMA"] = {"Akuma",9000, ""},
     ["bagger"] = {"Bagger",5000, ""},
     ["bati"] = {"Bati 801",15000, ""},
@@ -219,6 +236,79 @@ cfg.garage_types = {
     ["thrust"] = {"Thrust",75000, ""},
     ["vader"] = {"Vader",9000, ""},
     ["vindicator"] = {"Vindicator",600000,""}
+  },
+  ["taxi"] = {
+    _config = {map_entity = {"PoI", {blip_id = 56, blip_color = 5, marker_id = 1}}, permissions = {"taxi.vehicle"} },
+    ["taxi"] = {"Taxi",100,""}
+  },
+  ["police"] = {
+    _config = {map_entity = {"PoI", {blip_id = 50, blip_color = 38, marker_id = 1}}, permissions = {"police.vehicle"} },
+    ["police"] = {"Basic",100,"Basic model."},
+    ["police3"] = {"Classic",25000,"Sport model."},
+    ["police2"] = {"Furtive",50000,"Furtive model."}
+  },
+  ["emergency"] = {
+    _config = {map_entity = {"PoI", {blip_id = 61, blip_color = 3, marker_id = 1}}, permissions = {"emergency.vehicle"} },
+    ["ambulance"] = {"Basic",100,""}
+  },
+  ["bicycles"] = {
+    _config = {map_entity = {"PoI", {blip_id = 376, blip_color = 4, marker_id = 1}}},
+    ["tribike"] = {"Tribike", 250, ""},
+    ["BMX"] = {"BMX", 450, ""}
+  },
+  ["boats"] = {
+    _config = {map_entity = {"PoI", {blip_id = 427, blip_color = 4, marker_id = 1}}},
+    ["dinghy"] = {"Dinghy", 50000, "A zodiac."},
+    ["dinghy2"] = {"Dinghy II", 50000, "A zodiac."},
+    ["dinghy3"] = {"Dinghy III", 50000, "A zodiac."},
+    ["dinghy4"] = {"Dinghy IV", 50000, "A zodiac."},
+    ["marquis"] = {"Marquis", 250000, "A yacht."},
+    ["seashark"] = {"Seashark", 9000, "A jet ski."},
+    ["seashark2"] = {"Seashark II", 9000, "A jet ski."},
+    ["seashark3"] = {"Seashark III", 9000, "A jet ski."},
+    ["speeder"] = {"Speeder", 600000, "A fast boat."},
+    ["speeder2"] = {"Speeder II", 600000, "A fast boat."},
+    ["squalo"] = {"Squalo", 600000, "A fast boat."},
+    ["jetmax"] = {"JetMax", 600000, "A fast boat."},
+    ["toro"] = {"Toro", 600000, "A fast boat."},
+    ["toro2"] = {"Toro II", 600000, "A fast boat."},
+    ["tropic"] = {"Tropic", 600000, "A fast boat."},
+    ["tropic2"] = {"Tropic II", 600000, "A fast boat."},
+    ["predator"] = {"Predator", 600000, "A fast boat."},
+    ["suntrap"] = {"Suntrap", 250000, "Pleasure boat."}
+  },
+  ["planes"] = {
+    _config = {map_entity = {"PoI", {blip_id = 307, blip_color = 4, marker_id = 1}}},
+    ["velum"] = {"Velum", 500000, "Propeller plane."},
+    ["velum2"] = {"Velum II", 500000, "Propeller plane."},
+    ["stunt"] = {"Stunt", 250000, "Small propeller plane."},
+    ["mammatus"] = {"Mammatus", 250000, "Small propeller plane."},
+    ["dodo"] = {"Dodo", 250000, "Small propeller plane."},
+    ["duster"] = {"Duster", 105000, "Old propeller plane."},
+    ["cuban800"] = {"Cuban 800", 250000, "Small propeller plane."},
+    ["luxor"] = {"Luxor", 3500000, "Private jet."},
+    ["luxor2"] = {"Luxor II", 3500000, "Private jet."}
+  },
+  ["helicopters"] = {
+    _config = {map_entity = {"PoI", {blip_id = 43, blip_color = 4, marker_id = 1}}},
+    ["maverick"] = {"Maverick", 150000, "Basic chopper."},
+    ["swift"] = {"Swift", 550000, "Fast chopper."},
+    ["swift2"] = {"Swift II", 550000, "Fast chopper."},
+    ["supervolito"] = {"Super Volito", 850000, "Fast chopper."},
+    ["supervolito2"] = {"Super Volito II", 850000, "Fast chopper."},
+    ["volatus"] = {"Volatus", 3500000, "Top of the line chopper."}
+  },
+  ["transport"] = {
+    _config = {map_entity = {"PoI", {blip_id = 318, blip_color = 4, marker_id = 1}}},
+    ["packer"] = {"Packer", 15000, "Basic tug."},
+    ["benson"] = {"Benson", 8000, "Basic truck."},
+    ["bison"] = {"Bison", 12000, "Basic pickup truck."}
+  },
+  ["containers"] = {
+    _config = {map_entity = {"PoI", {blip_id = 318, blip_color = 17, marker_id = 1}}},
+    ["trailersmall"] = {"Petit", 3000, "Small container for pickup."},
+    ["trailers"] = {"Basic", 30000, "Medium container."},
+    ["tanker"] = {"Tanker", 300000, "Big container."}
   }
 }
 
@@ -229,15 +319,22 @@ cfg.garages = {
   {"sports",-1145.67, -1991.17, 13.162},
   {"sportsclassics",1174.76, 2645.46, 37.7545},
   {"supercars",112.275, 6619.83, 31.8154},
-  {"motorcycles",-205.789, -1308.02, 31.2916}
-  --{"planes",1640, 3236, 40.4},
-  --{"planes",2123, 4805, 41.19},
-  --{"planes",-1348, -2230, 13.9},
-  --{"helicopters",1750, 3260, 41.37},
-  --{"helicopters",-1233, -2269, 13.9},
-  --{"helicopters",-745, -1468, 5},
-  --{"boats",-849.5, -1368.64, 1.6},
-  --{"boats",1538, 3902, 30.35}
+  {"motorcycles",-205.789, -1308.02, 31.2916},
+  {"taxi",-286.870056152344,-917.948181152344,31.080623626709},
+  {"police",454.4,-1017.6,28.4},
+  {"emergency",-492.08544921875,-336.749206542969,34.3731842041016},
+  {"bicycles",-352.038482666016,-109.240043640137,38.6970825195313},
+  {"boats",-849.501281738281,-1367.69567871094,1.60516905784607},
+  {"boats",1299.11730957031,4215.66162109375,33.9086799621582},
+  {"boats",3867.17578125,4464.54248046875,2.72485375404358},
+  {"planes",1640.0, 3236.0, 40.4},
+  {"planes",2123.0, 4805.0, 41.19},
+  {"planes",-1348.0, -2230.0, 13.9},
+  {"helicopters",1750.0, 3260.0, 41.37},
+  {"helicopters",-1233.0, -2269.0, 13.9},
+  {"helicopters",-745.0, -1468.0, 5.0},
+  {"containers",-978.674682617188,-2994.29028320313,13.945068359375},
+  {"transport",-962.553039550781,-2965.82470703125,13.9450702667236}
 }
 
 return cfg

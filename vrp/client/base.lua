@@ -1,58 +1,124 @@
-cfg = module("cfg/client")
+-- init vRP client context
 
-local Tunnel = module("vrp", "lib/Tunnel")
-local Proxy = module("vrp", "lib/Proxy")
-local Tools = module("vrp", "lib/Tools")
+Tunnel = module("vrp", "lib/Tunnel")
+Proxy = module("vrp", "lib/Proxy")
 
-tvRP = {}
-local players = {} -- keep track of connected players (server id)
+local cvRP = module("vrp", "client/vRP")
+vRP = cvRP() -- instantiate vRP
 
--- bind client tunnel interface
-Tunnel.bindInterface("vRP", tvRP)
-
--- get server interface
-vRPserver = Tunnel.getInterface("vRP")
-
--- add client proxy interface (same as tunnel interface)
-Proxy.addInterface("vRP",tvRP)
-
--- functions
-
-local user_id
-function tvRP.setUserId(_user_id)
-  user_id = _user_id
+local pvRP = {}
+-- load script in vRP context
+function pvRP.loadScript(resource, path)
+  module(resource, path)
 end
 
--- get user id (client-side)
-function tvRP.getUserId()
-  return user_id
+Proxy.addInterface("vRP", pvRP)
+
+-- events
+
+AddEventHandler("playerSpawned",function()
+  vRP:triggerEvent("playerSpawn")
+  TriggerServerEvent("vRPcli:playerSpawned")
+end)
+
+-- dead event task
+Citizen.CreateThread(function()
+  local was_dead = false
+
+  while true do
+    Citizen.Wait(0)
+
+    local player = PlayerId()
+    if NetworkIsPlayerActive(player) then
+      local ped = PlayerPedId()
+
+      local dead = IsPedFatallyInjured(ped)
+
+      if not was_dead and dead then
+        was_dead = true
+        vRP:triggerEvent("playerDeath")
+        TriggerServerEvent("vRPcli:playerDied")
+      end
+
+      was_dead = dead
+    end
+  end
+end)
+
+-- Base extension
+
+local IDManager = module("vrp", "lib/IDManager")
+
+local Base = class("Base", vRP.Extension)
+Base.tunnel = {}
+
+function Base:__construct()
+  vRP.Extension.__construct(self)
+
+  self.players = {} -- map of player id, keeps track of connected players (server id)
+
+  self.ragdoll = false -- flag
+
+  -- ragdoll thread
+  Citizen.CreateThread(function()
+    while true do
+      Citizen.Wait(10)
+      if self.ragdoll then
+        SetPedToRagdoll(GetPlayerPed(-1), 1000, 1000, 0, 0, 0, 0)
+      end
+    end
+  end)
+
+  self.anims = {}
+  self.anim_ids = IDManager()
 end
 
-function tvRP.teleport(x,y,z)
-  tvRP.unjail() -- force unjail before a teleportation
-  SetEntityCoords(GetPlayerPed(-1), x+0.0001, y+0.0001, z+0.0001, 1,0,0,1)
-  vRPserver._updatePos(x,y,z)
+-- trigger vRP respawn
+function Base:triggerRespawn()
+  vRP:triggerEvent("playerSpawn")
+  TriggerServerEvent("vRPcli:playerSpawned")
+end
+
+-- heading: (optional) entity heading
+function Base:teleport(x,y,z,heading)
+  local ped = GetPlayerPed(-1)
+  SetEntityCoords(ped, x+0.0001, y+0.0001, z+0.0001, 1,0,0,1)
+  if heading then SetEntityHeading(ped, heading) end
+  vRP:triggerEvent("playerTeleport")
+end
+
+-- teleport vehicle when inside one (placed on ground)
+-- heading: (optional) entity heading
+function Base:vehicleTeleport(x,y,z,heading)
+  local ped = GetPlayerPed(-1)
+  local veh = GetVehiclePedIsIn(ped,false)
+
+  SetEntityCoords(veh, x+0.0001, y+0.0001, z+0.0001, 1,0,0,1)
+  if heading then SetEntityHeading(veh, heading) end
+  SetVehicleOnGroundProperly(veh)
+  vRP:triggerEvent("playerTeleport")
 end
 
 -- return x,y,z
-function tvRP.getPosition()
+function Base:getPosition()
   local x,y,z = table.unpack(GetEntityCoords(GetPlayerPed(-1),true))
   return x,y,z
 end
 
 -- return false if in exterior, true if inside a building
-function tvRP.isInside()
-  local x,y,z = tvRP.getPosition()
+function Base:isInside()
+  local x,y,z = self:getPosition()
   return not (GetInteriorAtCoords(x,y,z) == 0)
 end
 
--- return vx,vy,vz
-function tvRP.getSpeed()
+-- return ped speed (based on velocity)
+function Base:getSpeed()
   local vx,vy,vz = table.unpack(GetEntityVelocity(GetPlayerPed(-1)))
   return math.sqrt(vx*vx+vy*vy+vz*vz)
 end
 
-function tvRP.getCamDirection()
+-- return dx,dy,dz
+function Base:getCamDirection()
   local heading = GetGameplayCamRelativeHeading()+GetEntityHeading(GetPlayerPed(-1))
   local pitch = GetGameplayCamRelativePitch()
 
@@ -71,24 +137,13 @@ function tvRP.getCamDirection()
   return x,y,z
 end
 
-function tvRP.addPlayer(player)
-  players[player] = true
-end
-
-function tvRP.removePlayer(player)
-  players[player] = nil
-end
-
-function tvRP.getPlayers()
-  return players
-end
-
-function tvRP.getNearestPlayers(radius)
+-- return map of player id => distance
+function Base:getNearestPlayers(radius)
   local r = {}
 
   local ped = GetPlayerPed(i)
   local pid = PlayerId()
-  local px,py,pz = tvRP.getPosition()
+  local px,py,pz = self:getPosition()
 
   --[[
   for i=0,GetNumberOfPlayers()-1 do
@@ -104,10 +159,10 @@ function tvRP.getNearestPlayers(radius)
   end
   --]]
 
-  for k,v in pairs(players) do
+  for k in pairs(self.players) do
     local player = GetPlayerFromServerId(k)
 
-    if v and player ~= pid and NetworkIsPlayerConnected(player) then
+    if player ~= pid and NetworkIsPlayerConnected(player) then
       local oped = GetPlayerPed(player)
       local x,y,z = table.unpack(GetEntityCoords(oped,true))
       local distance = GetDistanceBetweenCoords(x,y,z,px,py,pz,true)
@@ -120,10 +175,11 @@ function tvRP.getNearestPlayers(radius)
   return r
 end
 
-function tvRP.getNearestPlayer(radius)
+-- return player id or nil
+function Base:getNearestPlayer(radius)
   local p = nil
 
-  local players = tvRP.getNearestPlayers(radius)
+  local players = self:getNearestPlayers(radius)
   local min = radius+10.0
   for k,v in pairs(players) do
     if v < min then
@@ -135,17 +191,19 @@ function tvRP.getNearestPlayer(radius)
   return p
 end
 
-function tvRP.notify(msg)
-  SetNotificationTextEntry("STRING")
-  AddTextComponentString(msg)
+-- GTA 5 text notification
+function Base:notify(msg)
+  AddTextEntry("MESSAGE_VRP", msg)
+  SetNotificationTextEntry("MESSAGE_VRP")
   DrawNotification(true, false)
 end
 
-function tvRP.notifyPicture(icon, type, sender, title, text)
-    SetNotificationTextEntry("STRING")
-    AddTextComponentString(text)
-    SetNotificationMessage(icon, icon, true, type, sender, title, text)
-    DrawNotification(false, true)
+-- GTA 5 picture notification
+function Base:notifyPicture(icon, type, sender, title, text)
+  SetNotificationTextEntry("STRING")
+  AddTextComponentString(text)
+  SetNotificationMessage(icon, icon, true, type, sender, title, text)
+  DrawNotification(false, true)
 end
 
 -- SCREEN
@@ -153,7 +211,7 @@ end
 -- play a screen effect
 -- name, see https://wiki.fivem.net/wiki/Screen_Effects
 -- duration: in seconds, if -1, will play until stopScreenEffect is called
-function tvRP.playScreenEffect(name, duration)
+function Base:playScreenEffect(name, duration)
   if duration < 0 then -- loop
     StartScreenEffect(name, 0, true)
   else
@@ -168,7 +226,7 @@ end
 
 -- stop a screen effect
 -- name, see https://wiki.fivem.net/wiki/Screen_Effects
-function tvRP.stopScreenEffect(name)
+function Base:stopScreenEffect(name)
   StopScreenEffect(name)
 end
 
@@ -176,26 +234,23 @@ end
 
 -- animations dict and names: http://docs.ragepluginhook.net/html/62951c37-a440-478c-b389-c471230ddfc5.htm
 
-local anims = {}
-local anim_ids = Tools.newIDGenerator()
-
 -- play animation (new version)
 -- upper: true, only upper body, false, full animation
 -- seq: list of animations as {dict,anim_name,loops} (loops is the number of loops, default 1) or a task def (properties: task, play_exit)
 -- looping: if true, will infinitely loop the first element of the sequence until stopAnim is called
-function tvRP.playAnim(upper, seq, looping)
+function Base:playAnim(upper, seq, looping)
   if seq.task then -- is a task (cf https://github.com/ImagicTheCat/vRP/pull/118)
-    tvRP.stopAnim(true)
+    self:stopAnim(true)
 
     local ped = GetPlayerPed(-1)
     if seq.task == "PROP_HUMAN_SEAT_CHAIR_MP_PLAYER" then -- special case, sit in a chair
-      local x,y,z = tvRP.getPosition()
+      local x,y,z = self:getPosition()
       TaskStartScenarioAtPosition(ped, seq.task, x, y, z-1, GetEntityHeading(ped), 0, 0, false)
     else
       TaskStartScenarioInPlace(ped, seq.task, 0, not seq.play_exit)
     end
   else -- a regular animation sequence
-    tvRP.stopAnim(upper)
+    self:stopAnim(self, upper)
 
     local flags = 0
     if upper then flags = flags+48 end
@@ -203,8 +258,8 @@ function tvRP.playAnim(upper, seq, looping)
 
     Citizen.CreateThread(function()
       -- prepare unique id to stop sequence when needed
-      local id = anim_ids:gen()
-      anims[id] = true
+      local id = self.anim_ids:gen()
+      self.anims[id] = true
 
       for k,v in pairs(seq) do
         local dict = v[1]
@@ -212,7 +267,7 @@ function tvRP.playAnim(upper, seq, looping)
         local loops = v[3] or 1
 
         for i=1,loops do
-          if anims[id] then -- check animation working
+          if self.anims[id] then -- check animation working
             local first = (k == 1 and i == 1)
             local last = (k == #seq and i == loops)
 
@@ -226,7 +281,7 @@ function tvRP.playAnim(upper, seq, looping)
             end
 
             -- play anim
-            if HasAnimDictLoaded(dict) and anims[id] then
+            if HasAnimDictLoaded(dict) and self.anims[id] then
               local inspeed = 8.0001
               local outspeed = -8.0001
               if not first then inspeed = 2.0001 end
@@ -236,7 +291,7 @@ function tvRP.playAnim(upper, seq, looping)
             end
 
             Citizen.Wait(0)
-            while GetEntityAnimCurrentTime(GetPlayerPed(-1),dict,name) <= 0.95 and IsEntityPlayingAnim(GetPlayerPed(-1),dict,name,3) and anims[id] do
+            while GetEntityAnimCurrentTime(GetPlayerPed(-1),dict,name) <= 0.95 and IsEntityPlayingAnim(GetPlayerPed(-1),dict,name,3) and self.anims[id] do
               Citizen.Wait(0)
             end
           end
@@ -244,16 +299,16 @@ function tvRP.playAnim(upper, seq, looping)
       end
 
       -- free id
-      anim_ids:free(id)
-      anims[id] = nil
+      self.anim_ids:free(id)
+      self.anims[id] = nil
     end)
   end
 end
 
 -- stop animation (new version)
 -- upper: true, stop the upper animation, false, stop full animations
-function tvRP.stopAnim(upper)
-  anims = {} -- stop all sequences
+function Base:stopAnim(upper)
+  self.anims = {} -- stop all sequences
   if upper then
     ClearPedSecondaryTask(GetPlayerPed(-1))
   else
@@ -262,22 +317,11 @@ function tvRP.stopAnim(upper)
 end
 
 -- RAGDOLL
-local ragdoll = false
 
 -- set player ragdoll flag (true or false)
-function tvRP.setRagdoll(flag)
-  ragdoll = flag
+function Base:setRagdoll(flag)
+  self.ragdoll = flag
 end
-
--- ragdoll thread
-Citizen.CreateThread(function()
-  while true do
-    Citizen.Wait(10)
-    if ragdoll then
-      SetPedToRagdoll(GetPlayerPed(-1), 1000, 1000, 0, 0, 0, 0)
-    end
-  end
-end)
 
 -- SOUND
 -- some lists: 
@@ -285,14 +329,50 @@ end)
 -- https://wiki.gtanet.work/index.php?title=FrontEndSoundlist
 
 -- play sound at a specific position
-function tvRP.playSpatializedSound(dict,name,x,y,z,range)
+function Base:playSpatializedSound(dict,name,x,y,z,range)
   PlaySoundFromCoord(-1,name,x+0.0001,y+0.0001,z+0.0001,dict,0,range+0.0001,0)
 end
 
 -- play sound
-function tvRP.playSound(dict,name)
+function Base:playSound(dict,name)
   PlaySound(-1,name,dict,0,0,1)
 end
+
+-- TUNNEL
+
+function Base.tunnel:setUserId(id)
+  self.id = id
+end
+
+function Base.tunnel:setCharacterId(id)
+  self.cid = id
+end
+
+function Base.tunnel:addPlayer(player)
+  self.players[player] = true
+end
+
+function Base.tunnel:removePlayer(player)
+  self.players[player] = nil
+end
+
+Base.tunnel.triggerRespawn = Base.triggerRespawn
+Base.tunnel.teleport = Base.teleport
+Base.tunnel.vehicleTeleport = Base.vehicleTeleport
+Base.tunnel.getPosition = Base.getPosition
+Base.tunnel.isInside = Base.isInside
+Base.tunnel.getSpeed = Base.getSpeed
+Base.tunnel.getNearestPlayers = Base.getNearestPlayers
+Base.tunnel.getNearestPlayer = Base.getNearestPlayer
+Base.tunnel.notify = Base.notify
+Base.tunnel.notifyPicture = Base.notifyPicture
+Base.tunnel.playScreenEffect = Base.playScreenEffect
+Base.tunnel.stopScreenEffect = Base.stopScreenEffect
+Base.tunnel.playAnim = Base.playAnim
+Base.tunnel.stopAnim = Base.stopAnim
+Base.tunnel.setRagdoll = Base.setRagdoll
+Base.tunnel.playSpatializedSound = Base.playSpatializedSound
+Base.tunnel.playSound = Base.playSound
 
 --[[
 -- not working
@@ -305,42 +385,4 @@ function tvRP.setMovement(dict)
 end
 --]]
 
--- events
-
-AddEventHandler("playerSpawned",function()
-  TriggerServerEvent("vRPcli:playerSpawned")
-end)
-
-AddEventHandler("onPlayerDied",function(player,reason)
-  TriggerServerEvent("vRPcli:playerDied")
-end)
-
-AddEventHandler("onPlayerKilled",function(player,killer,reason)
-  TriggerServerEvent("vRPcli:playerDied")
-end)
-
--- voice proximity computation
-Citizen.CreateThread(function()
-  while true do
-    Citizen.Wait(500)
-    if cfg.vrp_voip then -- vRP voip
-      NetworkSetTalkerProximity(0) -- disable voice chat
-    else -- regular voice chat
-      local ped = GetPlayerPed(-1)
-      local proximity = cfg.voice_proximity
-
-      if IsPedSittingInAnyVehicle(ped) then
-        local veh = GetVehiclePedIsIn(ped,false)
-        local hash = GetEntityModel(veh)
-        -- make open vehicles (bike,etc) use the default proximity
-        if IsThisModelACar(hash) or IsThisModelAHeli(hash) or IsThisModelAPlane(hash) then
-          proximity = cfg.voice_proximity_vehicle
-        end
-      elseif tvRP.isInside() then
-        proximity = cfg.voice_proximity_inside
-      end
-
-      NetworkSetTalkerProximity(proximity+0.0001)
-    end
-  end
-end)
+vRP:registerExtension(Base)

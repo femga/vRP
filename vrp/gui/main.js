@@ -1,35 +1,25 @@
 window.addEventListener("load",function(){
-  errdiv = document.createElement("div");
-  if(true){ //debug
-    errdiv.classList.add("console");
-    document.body.appendChild(errdiv);
-    window.onerror = function(errorMsg, url, lineNumber, column, errorObj){
-        errdiv.innerHTML += '<br />Error: ' + errorMsg + ' Script: ' + url + ' Line: ' + lineNumber
-                + ' Column: ' + column + ' StackTrace: ' +  errorObj;
-    }
-  }
-
-  log = function(txt)
-  {
-    errdiv.innerHTML += "<br />log: "+txt;
-  }
-
   //init dynamic menu
   var dynamic_menu = new Menu();
   var wprompt = new WPrompt();
   var requestmgr = new RequestManager();
   var announcemgr = new AnnounceManager();
+  var radio_display = new RadioDisplay();
   var aengine = new AudioEngine();
 
   requestmgr.onResponse = function(id,ok){ $.post("http://vrp/request",JSON.stringify({act: "response", id: id, ok: ok})); }
   wprompt.onClose = function(){ $.post("http://vrp/prompt",JSON.stringify({act: "close", result: wprompt.result})); }
-  dynamic_menu.onClose = function(){ $.post("http://vrp/menu",JSON.stringify({act: "close", id: dynamic_menu.id})); }
-  dynamic_menu.onValid = function(choice,mod){ $.post("http://vrp/menu",JSON.stringify({act: "valid", id: dynamic_menu.id, choice: choice, mod: mod})); }
+  dynamic_menu.onValid = function(option,mod){ $.post("http://vrp/menu",JSON.stringify({act: "valid", option: option, mod: mod})); }
+  var select_event = false;
+  dynamic_menu.onSelect = function(option){ 
+    if(select_event){
+      $.post("http://vrp/menu",JSON.stringify({act: "select", option: option}));
+    }
+  }
 
   //init
   $.post("http://vrp/init",""); 
 
-  var current_menu = dynamic_menu;
   var pbars = {}
   var divs = {}
 
@@ -46,30 +36,26 @@ window.addEventListener("load",function(){
     var data = evt.data;
 
     if(data.act == "cfg"){
-      cfg = data.cfg
+      cfg = data.cfg;
     }
-    else if(data.act == "pause_change"){
-      if(data.paused)
-        $(document.body).hide();
-      else
+    else if(data.act == "set_visible"){
+      if(data.flag)
         $(document.body).show();
+      else
+        $(document.body).hide();
     }
     else if(data.act == "open_menu"){ //OPEN DYNAMIC MENU
-      current_menu.close();
-      dynamic_menu.open(data.menudata.name,data.menudata.choices);
-      dynamic_menu.id = data.menudata.id;
-
-      //customize menu
-      var css = data.menudata.css
-      if(css.top)
-        dynamic_menu.div.style.top = css.top;
-      if(css.header_color)
-        dynamic_menu.div_header.style.backgroundColor = css.header_color;
-
-      current_menu = dynamic_menu;
+      select_event = data.menudata.select_event;
+      dynamic_menu.open(data.menudata);
     }
     else if(data.act == "close_menu"){ //CLOSE MENU
-      current_menu.close();
+      dynamic_menu.close();
+    }
+    else if(data.act == "set_menu_select_event"){
+      select_event = data.select_event;
+    }
+    else if(data.act == "update_menu_option"){
+      dynamic_menu.updateOption(data.index, data.title, data.description);
     }
     // PROGRESS BAR
     else if(data.act == "set_pbar"){
@@ -150,50 +136,48 @@ window.addEventListener("load",function(){
     else if(data.act == "audio_listener")
       aengine.setListenerData(data);
     //VoIP
+    else if(data.act == "configure_voip")
+      aengine.configureVoIP(data);
     else if(data.act == "connect_voice")
       aengine.connectVoice(data);
     else if(data.act == "disconnect_voice")
       aengine.disconnectVoice(data);
-    else if(data.act == "disconnect_voice")
-      aengine.disconnectVoice(data);
-    else if(data.act == "voice_peer_signal")
-      aengine.voicePeerSignal(data);
     else if(data.act == "set_voice_state")
       aengine.setVoiceState(data);
     else if(data.act == "configure_voice")
       aengine.configureVoice(data);
-    else if(data.act == "set_peer_configuration")
-      aengine.setPeerConfiguration(data);
+    else if(data.act == "set_voice_indicator")
+      aengine.setVoiceIndicator(data);
     else if(data.act == "set_player_positions")
       aengine.setPlayerPositions(data);
+    // Radio
+    else if(data.act == "set_radio_player_speaking_state")
+      radio_display.setPlayerSpeakingState(data);
     // CONTROLS
     else if(data.act == "event"){ //EVENTS
       if(data.event == "UP"){
         if(!wprompt.opened)
-          current_menu.moveUp();
+          dynamic_menu.moveUp();
       }
       else if(data.event == "DOWN"){
         if(!wprompt.opened)
-          current_menu.moveDown();
+          dynamic_menu.moveDown();
       }
       else if(data.event == "LEFT"){
         if(!wprompt.opened)
-          current_menu.valid(-1);
+          dynamic_menu.valid(-1);
       }
       else if(data.event == "RIGHT"){
         if(!wprompt.opened)
-          current_menu.valid(1);
+          dynamic_menu.valid(1);
       }
       else if(data.event == "SELECT"){
         if(!wprompt.opened)
-          current_menu.valid(0);
+          dynamic_menu.valid(0);
       }
       else if(data.event == "CANCEL"){
         if(wprompt.opened)
           wprompt.close();
-        else
-          current_menu.close();
-
       }
       else if(data.event == "F5"){
         requestmgr.respond(true);

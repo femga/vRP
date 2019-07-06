@@ -1,7 +1,6 @@
 -- Proxy interface system, used to add/call functions between resources
 
-local Debug = module("lib/Debug") 
-local Tools = module("lib/Tools")
+local IDManager = module("lib/IDManager")
 
 local Proxy = {}
 
@@ -33,10 +32,6 @@ local function proxy_resolve(itable,key)
       r = async()
       rid = ids:gen()
       callbacks[rid] = r
-
-      if Debug.active then
-        profile = Debug.pbegin("proxy_"..iname..":"..identifier.."("..rid.."):"..fname)
-      end
     end
 
     local args = {...}
@@ -44,13 +39,7 @@ local function proxy_resolve(itable,key)
     TriggerEvent(iname..":proxy",fname, args, identifier, rid)
     
     if not no_wait then
-      if Debug.active then -- debug
-        local rets = {r:wait()}
-        Debug.pend(profile)
-        return table.unpack(rets, 1, table.maxn(rets))
-      else
-        return r:wait()
-      end
+      return r:wait()
     end
   end
 
@@ -58,18 +47,16 @@ local function proxy_resolve(itable,key)
   return fcall
 end
 
---- Add event handler to call interface functions (can be called multiple times for the same interface name with different tables)
+-- add event handler to call interface functions 
+-- name: interface name
+-- itable: table containing functions
 function Proxy.addInterface(name, itable)
   AddEventHandler(name..":proxy", function(member,args,identifier,rid)
-    if Debug.active then
-      Debug.log("proxy_"..name..":"..identifier.."("..rid.."):"..member.." "..json.encode(Debug.safeTableCopy(args)))
-    end
-
     local f = itable[member]
 
     local rets = {}
     if type(f) == "function" then
-      rets = {f(table.unpack(args, 1, table.maxn(args)))}
+      rets = {f(table.unpack(args, 1, table_maxn(args)))}
       -- CancelEvent() -- cancel event doesn't seem to cancel the event for the other handlers, but if it does, uncomment this
     else
       print("error: proxy call "..name..":"..member.." not found")
@@ -83,18 +70,15 @@ end
 
 -- get a proxy interface 
 -- name: interface name
--- identifier: unique string to identify this proxy interface access (if nil, will be the name of the resource)
+-- identifier: (optional) unique string to identify this proxy interface access; if nil, will be the name of the resource
 function Proxy.getInterface(name, identifier)
   if not identifier then identifier = GetCurrentResourceName() end
 
-  local ids = Tools.newIDGenerator()
+  local ids = IDManager()
   local callbacks = {}
   local r = setmetatable({},{ __index = proxy_resolve, name = name, ids = ids, callbacks = callbacks, identifier = identifier })
 
   AddEventHandler(name..":"..identifier..":proxy_res", function(rid,rets)
---    if Debug.active then
---      Debug.log("proxy_"..name..":"..identifier.."_res("..rid.."): "..json.encode(Debug.safeTableCopy(rets)))
---    end
 
     local callback = callbacks[rid]
     if callback then
@@ -103,7 +87,7 @@ function Proxy.getInterface(name, identifier)
       callbacks[rid] = nil
 
       -- call
-      callback(table.unpack(rets, 1, table.maxn(rets)))
+      callback(table.unpack(rets, 1, table_maxn(rets)))
     end
 
   end)
